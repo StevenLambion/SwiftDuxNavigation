@@ -14,9 +14,9 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
       state = updateScene(named: sceneName, in: state) {
         $0.route = beginRouting(to: path, state: $0.route, animate: animate)
       }
-    case .beginPop(let path, let sceneName, let animate):
+    case .beginPop(let path, let perserveBranch, let sceneName, let animate):
       state = updateScene(named: sceneName, in: state) {
-        $0.route = beginPop(to: path, state: $0.route, animate: animate)
+        $0.route = beginPop(to: path, perserveBranch: perserveBranch, state: $0.route, animate: animate)
       }
     case .completeRouting(let sceneName):
       state = updateScene(named: sceneName, in: state) {
@@ -25,7 +25,7 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
     case .clearScene(let name):
       state.navigation.sceneByName.removeValue(forKey: name)
     }
-
+    print(state.navigation.sceneByName["main"]?.route.path ?? "")
     return state
   }
 
@@ -59,18 +59,18 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
     return state
   }
 
-  private func beginPop(to path: String, state: RouteState, animate: Bool) -> RouteState {
+  private func beginPop(to path: String, perserveBranch: Bool, state: RouteState, animate: Bool) -> RouteState {
     guard let resolvedPath = resolveAbsolutePath(path: path, previousPath: state.path) else {
       return state
     }
     guard let segment = state.legsByPath[resolvedPath] else { return state }
-    return beginRouting(to: segment.path, state: state, animate: animate)
+    return beginRouting(to: perserveBranch ? segment.path : segment.parentPath, state: state, animate: animate)
   }
 
   private func resolveAbsolutePath(path: String, previousPath: String) -> String? {
     let path = path.last == "/" ? path : path + "/"
     guard !path.starts(with: "/") else { return path }
-    return URL(string: "\(previousPath)/\(path)")?.standardized.absoluteString
+    return URL(string: "\(previousPath)\(path)")?.standardized.absoluteString
   }
 
   private func buildRouteSegments(path: String) -> ([String: RouteLeg], RouteLeg) {

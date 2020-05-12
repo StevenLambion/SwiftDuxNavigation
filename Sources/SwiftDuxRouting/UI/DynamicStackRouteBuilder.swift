@@ -53,6 +53,7 @@ where Content: View, T: LosslessStringConvertible & Equatable, BranchView: View 
     let nextRouteInfo = routeInfo.next(with: pathParam)
     return StackRoute(
       path: nextRouteInfo.path,
+      fromBranch: routeInfo.isBranch,
       view: branchView(pathParam)
         .environment(\.routeInfo, nextRouteInfo)
         .onPreferenceChange(StackRoutePreferenceKey.self) {

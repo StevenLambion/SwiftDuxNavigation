@@ -3,6 +3,7 @@ import SwiftUI
 
 public struct StackRouteBranchBuilder<Content>: ConnectableView where Content: View {
   @Environment(\.routeInfo) private var routeInfo
+  @MappedDispatch() private var dispatch
 
   private var content: Content
   private var name: String
@@ -21,12 +22,13 @@ public struct StackRouteBranchBuilder<Content>: ConnectableView where Content: V
   }
 
   public func map(state: NavigationStateRoot, binder: ActionBinder) -> Props? {
-    guard let segment = routeInfo.resolveLeg(in: state) else { return nil }
-    let shouldRedirect = segment.component.isEmpty && isDefault
+    guard let route = routeInfo.resolve(in: state) else { return nil }
+    let shouldRedirect = isDefault && route.path == routeInfo.path
+    let leg = routeInfo.resolveLeg(in: state)
     return Props(
-      isActive: segment.component == name || shouldRedirect,
+      isActive: leg?.component == name || shouldRedirect,
       shouldRedirect: shouldRedirect,
-      redirect: binder.bind { NavigationAction.navigate(to: "\(segment.path)\(self.name)/") }
+      redirect: binder.bind { NavigationAction.navigate(to: "\(self.routeInfo.path)\(self.name)/", animate: false) }
     )
   }
 

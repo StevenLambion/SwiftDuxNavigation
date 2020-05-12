@@ -58,9 +58,9 @@ public struct RouteState: StateType {
   public var completed: Bool = false
 
   public init(
-    path: String = "",
+    path: String = "/",
     legsByPath: [String: RouteLeg] = [:],
-    lastLeg: RouteLeg = RouteLeg(parentPath: "", component: ""),
+    lastLeg: RouteLeg = RouteLeg(parentPath: "/", component: ""),
     animate: Bool = false,
     completed: Bool = false
   ) {

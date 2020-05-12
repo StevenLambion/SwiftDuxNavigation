@@ -9,6 +9,8 @@ public struct RouteInfo {
   /// The active path relative to the view.
   public var path: String
 
+  public var isBranch: Bool = false
+
   /// Resolve the `RouteState` relative to the view from the application state.
   /// - Parameter state: The application state.
   /// - Returns: The `RouteState`.
@@ -24,10 +26,12 @@ public struct RouteInfo {
   }
 
   /// Get the next RouteInfo object for the provided component.
-  /// - Parameter component: 
-  /// - Returns: <#description#>
-  public func next<T>(with component: T) -> RouteInfo where T: LosslessStringConvertible {
-    RouteInfo(sceneName: sceneName, path: "\(path)\(component)/")
+  /// - Parameters:
+  ///   - component: The next component
+  ///   - isBranch: Indicates if the next route is a branch of a route.
+  /// - Returns: A new `RouteInfo`
+  public func next<T>(with component: T, isBranch: Bool = false) -> RouteInfo where T: LosslessStringConvertible {
+    RouteInfo(sceneName: sceneName, path: "\(path)\(component)/", isBranch: isBranch)
   }
 }
 

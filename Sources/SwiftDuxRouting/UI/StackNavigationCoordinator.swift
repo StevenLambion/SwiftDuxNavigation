@@ -3,15 +3,17 @@ import SwiftUI
 
 internal struct StackRoute: Equatable {
   var path: String
+  var fromBranch: Bool = false
   var viewController: () -> UIViewController
 
-  init(path: String, viewController: @escaping () -> UIViewController) {
+  init(path: String, fromBranch: Bool = false, viewController: @escaping () -> UIViewController) {
     self.path = path
+    self.fromBranch = fromBranch
     self.viewController = viewController
   }
 
-  init<V>(path: String, view: V) where V: View {
-    self.init(path: path, viewController: { UIHostingController(rootView: view) })
+  init<V>(path: String, fromBranch: Bool = false, view: V) where V: View {
+    self.init(path: path, fromBranch: fromBranch, viewController: { UIHostingController(rootView: view) })
   }
 
   static func == (lhs: StackRoute, rhs: StackRoute) -> Bool {
@@ -88,11 +90,7 @@ internal final class StackNavigationCoordinator: NSObject {
 
 extension StackNavigationCoordinator: UINavigationControllerDelegate {
 
-  func navigationController(
-    _ navigationController: UINavigationController,
-    willShow viewController: UIViewController,
-    animated: Bool
-  ) {
+  func navigationController(_ navigationController: UINavigationController, didShow viewController: UIViewController, animated: Bool) {
     guard viewController != rootViewController else {
       if !viewControllersByPath.isEmpty {
         dispatch(NavigationAction.navigate(to: rootPath, animate: false))
@@ -103,9 +101,11 @@ extension StackNavigationCoordinator: UINavigationControllerDelegate {
     guard let vcIndex = viewControllersByPath.firstIndex(where: { key, vc in vc == viewController })
     else { return }
     let path = viewControllersByPath.keys[vcIndex]
-    if routes.last?.path != path {
-      dispatch(NavigationAction.beginPop(path: path, scene: "main", animate: false))
-      dispatch(NavigationAction.completeRouting(scene: "main"))
+    if let route = routes.last {
+      if route.path != path {
+        dispatch(NavigationAction.pop(to: path, in: "main", preserveBranch: route.fromBranch, animate: false))
+        dispatch(NavigationAction.completeRouting(scene: "main"))
+      }
     }
   }
 }

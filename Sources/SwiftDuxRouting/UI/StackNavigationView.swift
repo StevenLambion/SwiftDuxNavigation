@@ -32,7 +32,7 @@ public struct StackNavigationView<RootView>: ConnectableView where RootView: Vie
     return Props(
       rootPath: routeInfo.path,
       animate: route.animate,
-      hide: !route.animate && !route.completed && !route.lastLeg.path.isEmpty
+      hide: !route.animate && !route.completed && route.lastLeg.path != route.path
     )
   }
 

@@ -48,6 +48,7 @@ where Content: View, BranchView: View {
   func createRoute() -> StackRoute {
     StackRoute(
       path: routeInfo.path,
+      fromBranch: routeInfo.isBranch,
       view: branchView()
     )
   }
