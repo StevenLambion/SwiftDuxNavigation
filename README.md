@@ -1,6 +1,6 @@
-# SwiftDuxRouting (Experimental)
+# SwiftDux Navigation (Experimental)
 
-> An experimental library to implement routing for SwiftDux.
+> An experimental library to implement deep link routing in SwiftDux.
 
 [![Swift Version][swift-image]][swift-url]
 ![Platform Versions][ios-image]

@@ -5,8 +5,8 @@
         "package": "SwiftDux",
         "repositoryURL": "https://github.com/StevenLambion/SwiftDux.git",
         "state": {
-          "branch": "features/remove-equatable-when-not-needed",
-          "revision": "96626c06c3876e936926f6c95d9bea4e6c6e76ad",
+          "branch": "master",
+          "revision": "0858ab168295507acd8cc3430c46ac48bf969fea",
           "version": null
         }
       }

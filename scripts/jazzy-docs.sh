@@ -1,6 +1,6 @@
 #! /bin/sh
 
-if [ ! -e SwiftDuxRouting.xcodeproj ]; then
+if [ ! -e SwiftDuxNavigation.xcodeproj ]; then
   swift package generate-xcodeproj
 fi
 

@@ -18,6 +18,8 @@ public struct StackRouteBranchBuilder<Content>: ConnectableView where Content: V
   public struct Props: Equatable {
     var isActive: Bool
     var shouldRedirect: Bool
+    var completed: Bool
+    var isLastRoute: Bool
     @ActionBinding var redirect: () -> Void
   }
 
@@ -28,6 +30,8 @@ public struct StackRouteBranchBuilder<Content>: ConnectableView where Content: V
     return Props(
       isActive: leg?.component == name || shouldRedirect,
       shouldRedirect: shouldRedirect,
+      completed: route.completed,
+      isLastRoute: routeInfo.path == route.lastLeg.parentPath,
       redirect: binder.bind { NavigationAction.navigate(to: "\(self.routeInfo.path)\(self.name)/", animate: false) }
     )
   }
@@ -37,8 +41,16 @@ public struct StackRouteBranchBuilder<Content>: ConnectableView where Content: V
       props.redirect()
     }
     return Group {
-      if props.isActive {
-        content.environment(\.routeInfo, routeInfo.next(with: name))
+      if !props.shouldRedirect && props.isActive {
+        content
+          .environment(\.routeInfo, routeInfo.next(with: name, isBranch: true))
+          .onAppear {
+            if !props.completed && props.isLastRoute {
+              DispatchQueue.main.asyncAfter(wallDeadline: .now()) {
+                self.dispatch(NavigationAction.completeRouting(scene: self.routeInfo.sceneName))
+              }
+            }
+          }
       }
     }
   }

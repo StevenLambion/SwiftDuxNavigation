@@ -70,4 +70,4 @@ fastlane/test_output
 .swiftpm
 SwiftDux.xcodeproj
 docs/
-/SwiftDuxRouting.xcodeproj
+/SwiftDuxNavigation.xcodeproj

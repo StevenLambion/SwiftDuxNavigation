@@ -1,7 +1,7 @@
 import XCTest
 
-import SwiftDuxRoutingTests
+import SwiftDuxNavigationTests
 
 var tests = [XCTestCaseEntry]()
-tests += SwiftDuxRoutingTests.allTests()
+tests += SwiftDuxNavigationTests.allTests()
 XCTMain(tests)
