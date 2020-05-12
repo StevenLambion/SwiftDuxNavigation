@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "SwiftDux",
+        "repositoryURL": "https://github.com/StevenLambion/SwiftDux.git",
+        "state": {
+          "branch": "features/remove-equatable-when-not-needed",
+          "revision": "96626c06c3876e936926f6c95d9bea4e6c6e76ad",
+          "version": null
+        }
+      }
+    ]
+  },
+  "version": 1
+}
