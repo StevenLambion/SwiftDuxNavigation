@@ -17,8 +17,8 @@ public struct RouteLink<Label>: View where Label: View {
   ///   - path: The path to navigate to. It may be a relative or absolute path.
   ///   - animate: Animate the navigation.
   ///   - label: The label of the button.
-  public init(path: String, animate: Bool = true, @ViewBuilder label: @escaping () -> Label) {
-    self.path = path
+  public init<T>(path: T, animate: Bool = true, @ViewBuilder label: @escaping () -> Label) where T: LosslessStringConvertible {
+    self.path = String(path)
     self.animate = animate
     self.label = label
   }
