@@ -55,7 +55,7 @@ Originally, I hadn't planned on creating a routing library for SwiftDux, but aft
         rootView: SecondaryView().scene(named: session.persistentIdentifier)
       )
     ```
-    Clean up any scenes unneeded sessions by dispatching `NavigationAction.clearScene(named:)`.
+    Clean up any unneeded scenes by dispatching `NavigationAction.clearScene(named:)`.
     ```swift
     // Inside the AppDelegate
     func application(_ application: UIApplication, didDiscardSceneSessions sceneSessions: Set<UISceneSession>) {
