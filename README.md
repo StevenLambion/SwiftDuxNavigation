@@ -5,9 +5,7 @@
 [![Swift Version][swift-image]][swift-url]
 ![Platform Versions][ios-image]
 
-Originally, I hadn't planned on creating a routing library for SwiftDux, but after the lack of features and a number of defects with the built-in offerings I took a stab at what it might take to implement a deep-link style API for SwiftUI.
-
-This library is currently experimental and could be superseded by any new offering Apple might bring along.
+Originally, I hadn't planned on creating a routing library for SwiftDux, but after the lack of features and a number of defects with the built-in offerings I took a stab at it. This library implements a deep-link style API for SwiftUI. It's currently experimental and could be superseded by any new offering Apple might bring along.
 
 ## Features
 - Deep link style navigation.
