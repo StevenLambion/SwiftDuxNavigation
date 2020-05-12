@@ -38,8 +38,52 @@ StackNavigationView {
         Text(item.name)
       }
     }
-  }.addRoute { id
+  }.addRoute { id in
     ItemDetails(id: id)
   }
 }
+```
+### Static branching Example
+```swift
+StackNavigationView {
+  AppSectionList()
+    .addRoute {
+      recipes().branch("company", isDefault: true)
+      shoppingList().branch("contact")
+      settings().branch("settings")
+    }
+}
+
+
+// In a view: 
+RouteLink(path: "/settings")
+```
+
+### Dynamic branching Example
+```swift
+StackNavigationView {
+  List {
+    ForEach(items) { item
+      RouteLink(path: "\(item.id)/company") {
+        PersonRow(item)
+      }
+    }
+  }.addRoute { id in
+    CompanyDetails(id: id).branch("company", isDefault: true)
+    ContactDetails(id: id).branch("contact")
+  }
+}
+```
+
+### RouteLink Examples
+```swift
+
+// Pass a single path parameer or component.
+RouteLink(path: id) { Text("Label") }
+
+// Go up a level
+RouteLink(path: "..")  { Text("Label") }
+
+// Absolute path
+RouteLink(path: "/person/\(id)/company")  { Text("Label") }
 ```
