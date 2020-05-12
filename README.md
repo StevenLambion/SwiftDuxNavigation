@@ -33,7 +33,7 @@ Originally, I hadn't planned on creating a routing library for SwiftDux, but aft
 ```swift
 StackNavigationView {
   List {
-    ForEach(items) { item
+    ForEach(items) { item in
       RouteLink(path: item.id) {
         Text(item.name)
       }
@@ -63,7 +63,7 @@ RouteLink(path: "/settings")
 ```swift
 StackNavigationView {
   List {
-    ForEach(items) { item
+    ForEach(items) { item in
       RouteLink(path: "\(item.id)/company") {
         PersonRow(item)
       }
