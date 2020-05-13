@@ -5,9 +5,9 @@
         "package": "SwiftDux",
         "repositoryURL": "https://github.com/StevenLambion/SwiftDux.git",
         "state": {
-          "branch": "master",
+          "branch": null,
           "revision": "0858ab168295507acd8cc3430c46ac48bf969fea",
-          "version": null
+          "version": "1.2.1"
         }
       }
     ]
