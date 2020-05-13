@@ -25,7 +25,6 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
     case .clearScene(let name):
       state.navigation.sceneByName.removeValue(forKey: name)
     }
-    print(state.navigation.sceneByName["main"]?.route.path ?? "")
     return state
   }
 
