@@ -5,7 +5,7 @@
 [![Swift Version][swift-image]][swift-url]
 ![Platform Versions][ios-image]
 
-This is an experimental library that implements a deep-link style API for navigation. It's currently in an early proof-of-concept stage. Its goal is focused on the routing of an application with minimal additions to the built-in SwiftUI views.
+This is an experimental library that implements a deep-link routing API for applications. It's currently in an early proof-of-concept stage. Its goal is focused on the routing of an application with minimal additions to the built-in SwiftUI views.
 
 ## Features
 - Deep link style navigation.
@@ -72,10 +72,10 @@ This is an experimental library that implements a deep-link style API for naviga
 
 [Checkout the SwiftDux Todo Example](https://github.com/StevenLambion/SwiftUI-Todo-Example/tree/swiftdux-navigation).
 
-### Basic usage
+### Stack navigation
 Create a new `StackNavigationView` to display the app's navigation as a stack. The `View.addStackRoute()` methods create the next item in the stack. Think of them as a UIViewController in a UINavigationController. The view inside the route is a branch, and a route may contain one or more of them. In the example, a new route is created with a single branch that displays the `ItemDetails(id:)` view.
 
-When a user taps the `RouteLink`, it will navigate to the route with the `ItemDetails(id:)`.The id type can be anything that is convertible from a `String` such as an `Int`. The library automatically converts path parameters to match the type required by the route.
+When a user taps the `RouteLink`, it will navigate to the route with the `ItemDetails(id:)`. The id type can be anything that is convertible from a `String` such as an `Int`. The library automatically converts path parameters to match the type required by the route.
 
 ```swift
 StackNavigationView {
