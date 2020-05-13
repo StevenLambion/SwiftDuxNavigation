@@ -10,35 +10,22 @@ where Content: View, BranchView: View {
   var branchView: () -> BranchView
 
   struct Props: Equatable {
+    var route: RouteState
     var isActive: Bool
-    var isLastRoute: Bool
-    var completed: Bool
   }
 
   func map(state: NavigationStateRoot) -> Props? {
     guard let route = routeInfo.resolve(in: state) else { return nil }
     return Props(
-      isActive: routeInfo.resolveLeg(in: state) != nil,
-      isLastRoute: routeInfo.path == route.lastLeg.parentPath,
-      completed: route.completed
+      route: route,
+      isActive: routeInfo.resolveLeg(in: state) != nil
     )
   }
 
   func body(props: Props) -> some View {
-    Group {
+    RouteContents(route: props.route) {
       if props.isActive {
-        content
-          .preference(
-            key: StackRoutePreferenceKey.self,
-            value: [createRoute()]
-          )
-          .onAppear {
-            if !props.completed && props.isLastRoute {
-              DispatchQueue.main.asyncAfter(wallDeadline: .now()) {
-                self.dispatch(NavigationAction.completeRouting(scene: self.routeInfo.sceneName))
-              }
-            }
-          }
+        content.stackRoutePreference([createRoute()])
       } else {
         content
       }

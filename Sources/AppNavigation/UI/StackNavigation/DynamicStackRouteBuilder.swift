@@ -13,36 +13,23 @@ where Content: View, T: LosslessStringConvertible & Equatable, BranchView: View 
   @State private var childRoutes: [StackRoute] = []
 
   public struct Props: Equatable {
+    var route: RouteState
     var pathParam: T?
-    var completed: Bool
-    var isLastRoute: Bool
   }
 
   public func map(state: NavigationStateRoot, binder: ActionBinder) -> Props? {
-    let route = routeInfo.resolve(in: state)
-    let segment = route?.legsByPath[routeInfo.path]
+    guard let route = routeInfo.resolve(in: state) else { return nil }
+    let leg = route.legsByPath[routeInfo.path]
     return Props(
-      pathParam: segment.flatMap { !$0.component.isEmpty ? T($0.component) : nil },
-      completed: route?.completed ?? true,
-      isLastRoute: routeInfo.path == route?.lastLeg.parentPath
+      route: route,
+      pathParam: leg.flatMap { !$0.component.isEmpty ? T($0.component) : nil }
     )
   }
 
   public func body(props: Props) -> some View {
-    return Group {
+    RouteContents(route: props.route) {
       if props.pathParam != nil {
-        content
-          .preference(
-            key: StackRoutePreferenceKey.self,
-            value: [createRoute(pathParam: props.pathParam!)] + childRoutes
-          )
-          .onAppear {
-            if !props.completed && props.isLastRoute {
-              DispatchQueue.main.asyncAfter(wallDeadline: .now()) {
-                self.dispatch(NavigationAction.completeRouting(scene: self.routeInfo.sceneName))
-              }
-            }
-          }
+        content.stackRoutePreference([createRoute(pathParam: props.pathParam!)] + childRoutes)
       } else {
         content
       }

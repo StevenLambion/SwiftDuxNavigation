@@ -16,11 +16,9 @@ public struct StackRouteBranchBuilder<Content>: ConnectableView where Content: V
   }
 
   public struct Props: Equatable {
+    var route: RouteState
     var isActive: Bool
     var shouldRedirect: Bool
-    var completed: Bool
-    var isLastRoute: Bool
-    @ActionBinding var redirect: () -> Void
   }
 
   public func map(state: NavigationStateRoot, binder: ActionBinder) -> Props? {
@@ -28,29 +26,18 @@ public struct StackRouteBranchBuilder<Content>: ConnectableView where Content: V
     let shouldRedirect = isDefault && route.path == routeInfo.path
     let leg = routeInfo.resolveLeg(in: state)
     return Props(
-      isActive: leg?.component == name || shouldRedirect,
-      shouldRedirect: shouldRedirect,
-      completed: route.completed,
-      isLastRoute: routeInfo.path == route.lastLeg.parentPath,
-      redirect: binder.bind { NavigationAction.navigate(to: "\(self.routeInfo.path)\(self.name)/", animate: false) }
+      route: route,
+      isActive: leg?.component == name && !shouldRedirect,
+      shouldRedirect: shouldRedirect
     )
   }
 
   public func body(props: Props) -> some View {
-    if props.shouldRedirect {
-      props.redirect()
-    }
-    return Group {
-      if !props.shouldRedirect && props.isActive {
-        content
-          .environment(\.routeInfo, routeInfo.next(with: name, isBranch: true))
-          .onAppear {
-            if !props.completed && props.isLastRoute {
-              DispatchQueue.main.asyncAfter(wallDeadline: .now()) {
-                self.dispatch(NavigationAction.completeRouting(scene: self.routeInfo.sceneName))
-              }
-            }
-          }
+    Redirect(path: name, enabled: props.shouldRedirect) {
+      RouteContents(route: props.route) {
+        if props.isActive {
+          content.environment(\.routeInfo, routeInfo.next(with: name, isBranch: true))
+        }
       }
     }
   }

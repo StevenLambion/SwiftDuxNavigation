@@ -28,6 +28,7 @@ public struct RouteLink<Label>: View where Label: View {
   }
 
   private func navigate() {
-    dispatch(NavigationAction.navigate(to: path, in: routeInfo.sceneName, animate: animate))
+    guard let absolutePath = path.standardizePath(withBasePath: routeInfo.path) else { return }
+    dispatch(NavigationAction.navigate(to: absolutePath, in: routeInfo.sceneName, animate: animate))
   }
 }

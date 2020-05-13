@@ -40,7 +40,7 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
   }
 
   private func beginRouting(to path: String, state: RouteState, animate: Bool) -> RouteState {
-    guard let resolvedPath = resolveAbsolutePath(path: path, previousPath: state.path) else {
+    guard let resolvedPath = path.standardizePath(withBasePath: state.path) else {
       return state
     }
     let (segments, lastSegment) = buildRouteSegments(path: resolvedPath)
@@ -60,17 +60,11 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
   }
 
   private func beginPop(to path: String, perserveBranch: Bool, state: RouteState, animate: Bool) -> RouteState {
-    guard let resolvedPath = resolveAbsolutePath(path: path, previousPath: state.path) else {
+    guard let resolvedPath = path.standardizePath(withBasePath: state.path) else {
       return state
     }
     guard let segment = state.legsByPath[resolvedPath] else { return state }
     return beginRouting(to: perserveBranch ? segment.path : segment.parentPath, state: state, animate: animate)
-  }
-
-  private func resolveAbsolutePath(path: String, previousPath: String) -> String? {
-    let path = path.last == "/" ? path : path + "/"
-    guard !path.starts(with: "/") else { return path }
-    return URL(string: "\(previousPath)\(path)")?.standardized.absoluteString
   }
 
   private func buildRouteSegments(path: String) -> ([String: RouteLeg], RouteLeg) {
