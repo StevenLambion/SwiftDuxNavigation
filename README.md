@@ -1,19 +1,20 @@
 # SwiftDux Navigation (Experimental)
 
-> An experimental library to implement deep link routing in SwiftDux.
+> Provides deep link routing to SwiftUI applications powered by SwiftDux.
 
 [![Swift Version][swift-image]][swift-url]
 ![Platform Versions][ios-image]
 
-Originally, I hadn't planned on creating a routing library for SwiftDux, but after the lack of features and a number of defects with the built-in offerings I took a stab at it. This library implements a deep-link style API for SwiftUI. It's currently experimental and could be superseded by any new offering Apple might bring along.
+This is an experimental library that implements a deep-link style API for navigation. It's currently in an early proof-of-concept stage. Its goal is focused on the routing of an application with minimal additions to the built-in SwiftUI views.
 
 ## Features
 - Deep link style navigation.
-- Save and restore the application's navigation using SwiftDux.
-- Stack navigation (using UINavigationController)
+- Save and restore navigation between sessions automatically.
+- Stack navigation
+    - Uses UINavigationController on iOS.
     - Supports swiping to go back.
     - Works with SwiftUI navigation bar features.
-- Scene support (such as UIScene)
+- Scene support to create separate routes between windows or UIScenes.
 
 ## Thing to do
 - Error handling
@@ -67,7 +68,11 @@ Originally, I hadn't planned on creating a routing library for SwiftDux, but aft
 
 ## Examples
 
-### Basic Example
+### Live Example
+
+[Checkout the SwiftDux Todo Example](https://github.com/StevenLambion/SwiftUI-Todo-Example/tree/swiftdux-navigation).
+
+### Basic usage
 Create a new `StackNavigationView` to display the app's navigation as a stack. The `View.addStackRoute()` methods create the next item in the stack. Think of them as a UIViewController in a UINavigationController. The view inside the route is a branch, and a route may contain one or more of them. In the example, a new route is created with a single branch that displays the `ItemDetails(id:)` view.
 
 When a user taps the `RouteLink`, it will navigate to the route with the `ItemDetails(id:)`.The id type can be anything that is convertible from a `String` such as an `Int`. The library automatically converts path parameters to match the type required by the route.
@@ -85,7 +90,7 @@ StackNavigationView {
   }
 }
 ```
-### Static branching Example
+### Static branching
 To add multiple branches to a route, use the `View.branch(_:isDefault:)` method. This gives the branches a name to specify the active one. Think of it as the `View.tag(_:)` method for a `TabView`. In cases where a branch isn't specified, the application can redirect to a default one.
 
 ```swift
@@ -102,7 +107,7 @@ StackNavigationView {
 RouteLink(path: "/settings")
 ```
 
-### Dynamic branching Example
+### Dynamic branching
 Dynamic routes pass their last path component to its branches as a path parameter. In some cases, this may lead to two or more consecutive dynamic routes that form a path made up entirely of path parameters. To resolve this, specify branch names on the dynamic routes.
 
 ```swift
@@ -123,7 +128,7 @@ StackNavigationView {
 RouteLink(path: "/people/\(person.id)/companies/\(company.id)")
 ```
 
-### RouteLink Examples
+### RouteLinks
 ```swift
 // Pass a single path parameter or component.
 let id = 123
