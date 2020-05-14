@@ -20,25 +20,35 @@ public struct Redirect<Content>: ConnectableView where Content: View {
   ///   - animate: Animate the redirect if possible.
   ///   - enabled: Enables the redirect. Defaults to true.
   ///   - content: The content to display if it should not redirect.
-  init(path: String, animate: Bool = false, enabled: Bool = true, @ViewBuilder content: () -> Content) {
+  public init(path: String, animate: Bool = false, enabled: Bool = true, @ViewBuilder content: () -> Content) {
     self.path = path
     self.animate = animate
     self.enabled = enabled
     self.content = content()
   }
-  
-  public func map(state: NavigationStateRoot) -> String? {
-    routeInfo.resolve(in: state)?.path
+
+  public struct Props: Equatable {
+    var route: RouteState
+    var leg: RouteLeg?
+
+    public static func == (lhs: Props, rhs: Props) -> Bool {
+      lhs.leg == rhs.leg
+    }
   }
 
-  public func body(props: String) -> some View {
-    content.onAppear { self.redirect(path: props) }
+  public func map(state: NavigationStateRoot) -> Props? {
+    guard let route = routeInfo.resolve(in: state) else { return nil }
+    return Props(route: route, leg: route.legsByPath[routeInfo.path])
   }
-  
-  private func redirect(path: String) {
+
+  public func body(props: Props) -> some View {
+    content.onAppear { self.redirect(props: props) }
+  }
+
+  private func redirect(props: Props) {
     guard self.enabled else { return }
     guard let absolutePath = self.path.standardizePath(withBasePath: self.routeInfo.path) else { return }
-    if path != absolutePath && !path.starts(with: absolutePath) {
+    if props.route.path != absolutePath && !props.route.path.starts(with: absolutePath) {
       self.dispatch(NavigationAction.navigate(to: absolutePath, in: self.routeInfo.sceneName, animate: self.animate))
     }
   }

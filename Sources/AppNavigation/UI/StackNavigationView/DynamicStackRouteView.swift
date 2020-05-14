@@ -1,7 +1,7 @@
 import SwiftDux
 import SwiftUI
 
-public struct DynamicStackRouteBuilder<Content, T, BranchView>: ConnectableView
+public struct DynamicStackRouteView<Content, T, BranchView>: View
 where Content: View, T: LosslessStringConvertible & Equatable, BranchView: View {
   @Environment(\.routeInfo) private var routeInfo
   @MappedDispatch() private var dispatch
@@ -11,24 +11,15 @@ where Content: View, T: LosslessStringConvertible & Equatable, BranchView: View 
 
   @State private var childRoutes: [StackRoute] = []
 
-  public struct Props: Equatable {
-    var route: RouteState
-    var pathParam: T?
+  public var body: some View {
+    RouteContents(content: routeContents)
   }
 
-  public func map(state: NavigationStateRoot, binder: ActionBinder) -> Props? {
-    guard let route = routeInfo.resolve(in: state) else { return nil }
-    let leg = route.legsByPath[routeInfo.path]
-    return Props(
-      route: route,
-      pathParam: leg.flatMap { !$0.component.isEmpty ? T($0.component) : nil }
-    )
-  }
-
-  public func body(props: Props) -> some View {
-    RouteContents(route: props.route) {
-      if props.pathParam != nil {
-        content.stackRoutePreference([createRoute(pathParam: props.pathParam!)] + childRoutes)
+  private func routeContents(routeInfo: RouteInfo, leg: RouteLeg?, route: RouteState) -> some View {
+    let pathParam = leg.flatMap { !$0.component.isEmpty ? T($0.component) : nil }
+    return Group {
+      if pathParam != nil {
+        content.stackRoutePreference([createRoute(pathParam: pathParam!)] + childRoutes)
       } else {
         content
       }
@@ -51,8 +42,11 @@ where Content: View, T: LosslessStringConvertible & Equatable, BranchView: View 
 
 extension View {
 
-  public func addStackRoute<T, V>(@ViewBuilder branchView: @escaping (T) -> V) -> some View
+  /// Add a new stack route that accepts a path parameter.
+  /// - Parameter branchView: The view of the route.
+  /// - Returns: A view.
+  public func stackRoute<T, V>(@ViewBuilder branchView: @escaping (T) -> V) -> some View
   where T: LosslessStringConvertible & Equatable, V: View {
-    DynamicStackRouteBuilder(content: self, branchView: branchView)
+    DynamicStackRouteView(content: self, branchView: branchView)
   }
 }

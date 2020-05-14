@@ -5,35 +5,41 @@ import SwiftUI
 ///
 /// This handles any house keeping required to properly manage the route state
 /// within the view layer.
-public struct RouteContents<Content>: View where Content: View {
+public struct RouteContents<Content>: ConnectableView where Content: View {
   @Environment(\.routeInfo) private var routeInfo
   @MappedDispatch() private var dispatch
 
-  private var route: RouteState
-  private var content: Content
-
-  private var isLastRoute: Bool {
-    routeInfo.path == route.lastLeg.parentPath
-  }
+  private var content: (RouteInfo, RouteLeg?, RouteState) -> Content
 
   /// Initiate a new RouteContents.
-  /// - Parameters:
-  ///   - route: The route itself.
-  ///   - content: The contents of the route.
-  init(route: RouteState, @ViewBuilder content: () -> Content) {
-    self.route = route
-    self.content = content()
+  /// - Parameter content: The contents of the route.
+  public init(@ViewBuilder content: @escaping (RouteInfo, RouteLeg?, RouteState) -> Content) {
+    self.content = content
   }
 
   public struct Props: Equatable {
-    var completed: Bool
-    var isLastRoute: Bool
+    var route: RouteState
+    var leg: RouteLeg?
+    var shouldComplete: Bool
+
+    public static func == (lhs: Props, rhs: Props) -> Bool {
+      lhs.leg == rhs.leg && lhs.shouldComplete == rhs.shouldComplete
+    }
   }
 
-  public var body: some View {
-    if !self.route.completed && self.isLastRoute {
+  public func map(state: NavigationStateRoot) -> Props? {
+    guard let route = routeInfo.resolve(in: state) else { return nil }
+    return Props(
+      route: route,
+      leg: route.legsByPath[routeInfo.path],
+      shouldComplete: !route.completed && routeInfo.path == route.lastLeg.parentPath
+    )
+  }
+
+  public func body(props: Props) -> some View {
+    if props.shouldComplete {
       self.dispatch(NavigationAction.completeRouting(scene: self.routeInfo.sceneName))
     }
-    return content
+    return content(routeInfo, props.leg, props.route)
   }
 }

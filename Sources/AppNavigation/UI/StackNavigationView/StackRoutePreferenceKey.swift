@@ -13,5 +13,4 @@ extension View {
   func stackRoutePreference(_ routes: [StackRoute]) -> some View {
     self.preference(key: StackRoutePreferenceKey.self, value: routes)
   }
-
 }

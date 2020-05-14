@@ -42,7 +42,6 @@ public struct StackNavigationView<RootView>: ConnectableView where RootView: Vie
       animate: props.animate,
       rootView: rootView
     )
-    //.edgesIgnoringSafeArea(.top)
-    //.opacity(props.hide ? 0 : 1)
+    .opacity(props.hide ? 0 : 1)
   }
 }
