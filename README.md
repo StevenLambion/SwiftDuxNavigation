@@ -9,19 +9,27 @@ This is an experimental library that implements a deep-link routing API for appl
 
 ## Features
 - Deep link style navigation.
-- Save and restore navigation between sessions automatically.
-- Stack navigation
-    - Uses UINavigationController on iOS.
-    - Supports swiping to go back.
-    - Works with SwiftUI navigation bar features.
+- Save and restore navigation between sessions by persisting the SwiftDux state.
 - Scene support to create separate routes between windows or UIScenes.
+
+## Views
+- `RootNavigationView` - Initiates the ground work.
+    - It shares environment objects across view hierarchies.
+- `StackNavigationView` - Stacks routes on top of each other.
+  - Uses UINavigationController on iOS.
+    - Supports swipe gesture.
+    - Works with SwiftUI navigation bar features.
+- `RoutableTabView` - Display a tab view of routable branches.
+  - Use `View.tabItem` just like the regular `TabView`.
+- `Redirect` - Conditionally redirects the route.
+- `RouteContents` - Create custom route views.
 
 ## Thing to do
 - Error handling
-- Graceful recovery support from invalid paths
+- Graceful recovery of invalid routes.
 - macOS support
 - SplitView support
-- TabView support
+- Save routing state of inactive tabs.
 - Make swipe navigation optional.
 
 [swift-image]: https://img.shields.io/badge/swift-5.2-orange.svg
@@ -80,6 +88,12 @@ This is an experimental library that implements a deep-link routing API for appl
 ### Live Example
 
 [Checkout the SwiftDux Todo Example](https://github.com/StevenLambion/SwiftUI-Todo-Example/tree/swiftdux-navigation).
+
+## TabView
+```swift
+RoutableTabView(initialValue: "recipeBooks") {
+}
+```
 
 ### Stack navigation
 Create a new `StackNavigationView` to display the app's navigation as a stack. The `View.stackRoute()` methods create the next item in the stack. Think of them as a UIViewController in a UINavigationController. The view inside the route is a branch, and a route may contain one or more of them. In the example, a new route is created with a single branch that displays the `ItemDetails(id:)` view.
