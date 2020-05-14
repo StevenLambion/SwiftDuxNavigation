@@ -44,7 +44,7 @@ This is an experimental library that implements a deep-link routing API for appl
       Store(state: AppState(), reducer: AppReducer() + NavigationReducer())
     ```
 
-1. Wrap your view hierarchy with `RootNavigationView`. Then attach any environment objects outside of the `RootNavigationView`. If the environment objects are not injected outside of this view, they may not propagate to all view hierarchies.
+1. Wrap your root view with `RootNavigationView`. Then attach any environment objects outside of the `RootNavigationView`. If the environment objects are not injected outside of this view, they may not propagate to all view hierarchies.
     ```swift
       RootNavigationView {
         RootView()
@@ -53,9 +53,11 @@ This is an experimental library that implements a deep-link routing API for appl
 
 1. Provide the SwiftDux store a second time using the `NavigationStateRoot` protocol. This allows SwiftDuxNavigation's views to access it.
     ```swift
+    RootNavigationView {
       RootView()
-        .provideStore(store)
-        .provideStore(store, as: NavigationStateRoot.self)
+    }
+    .provideStore(store)
+    .provideStore(store, as: NavigationStateRoot.self)
     ```
 1. Optionally, specify the current scene when creating a new window or UIScene. By default, the routing uses a "main" scene to conduct navigation.
     ```swift
