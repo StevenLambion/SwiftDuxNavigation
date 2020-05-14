@@ -44,7 +44,14 @@ This is an experimental library that implements a deep-link routing API for appl
       Store(state: AppState(), reducer: AppReducer() + NavigationReducer())
     ```
 
-1. Provide the store using the `NavigationStateRoot` protocol.
+1. Wrap your view hierarchy with `RootNavigationView`. Then attach any environment objects outside of the `RootNavigationView`. If the environment objects are not injected outside of this view, they may not propagate to all view hierarchies.
+    ```swift
+      RootNavigationView {
+        RootView()
+      }.provideStore(store)
+    ```
+
+1. Provide the SwiftDux store a second time using the `NavigationStateRoot` protocol. This allows SwiftDuxNavigation's views to access it.
     ```swift
       RootView()
         .provideStore(store)
@@ -73,7 +80,7 @@ This is an experimental library that implements a deep-link routing API for appl
 [Checkout the SwiftDux Todo Example](https://github.com/StevenLambion/SwiftUI-Todo-Example/tree/swiftdux-navigation).
 
 ### Stack navigation
-Create a new `StackNavigationView` to display the app's navigation as a stack. The `View.addStackRoute()` methods create the next item in the stack. Think of them as a UIViewController in a UINavigationController. The view inside the route is a branch, and a route may contain one or more of them. In the example, a new route is created with a single branch that displays the `ItemDetails(id:)` view.
+Create a new `StackNavigationView` to display the app's navigation as a stack. The `View.stackRoute()` methods create the next item in the stack. Think of them as a UIViewController in a UINavigationController. The view inside the route is a branch, and a route may contain one or more of them. In the example, a new route is created with a single branch that displays the `ItemDetails(id:)` view.
 
 When a user taps the `RouteLink`, it will navigate to the route with the `ItemDetails(id:)`. The id type can be anything that is convertible from a `String` such as an `Int`. The library automatically converts path parameters to match the type required by the route.
 
@@ -85,7 +92,7 @@ StackNavigationView {
         Text(item.name)
       }
     }
-  }.addStackRoute { id in
+  }.stackRoute { id in
     ItemDetails(id: id)
   }
 }
@@ -96,7 +103,7 @@ To add multiple branches to a route, use the `View.branch(_:isDefault:)` method.
 ```swift
 StackNavigationView {
   AppSectionList()
-    .addStackRoute {
+    .stackRoute {
       recipes().branch("company", isDefault: true)
       shoppingList().branch("contact")
       settings().branch("settings")
@@ -118,7 +125,7 @@ StackNavigationView {
         PersonRow(item)
       }
     }
-  }.addStackRoute { id in
+  }.stackRoute { id in
     CompanyDetails(id: id).branch("companies", isDefault: true)
     ContactDetails(id: id).branch("contact")
   }
