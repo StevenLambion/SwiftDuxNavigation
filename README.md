@@ -89,13 +89,22 @@ This is an experimental library that implements a deep-link routing API for appl
 
 [Checkout the SwiftDux Todo Example](https://github.com/StevenLambion/SwiftUI-Todo-Example/tree/swiftdux-navigation).
 
-## TabView
+### RoutableTabView
 ```swift
-RoutableTabView(initialValue: "recipeBooks") {
+RoutableTabView(initialTab: "allMusic") {
+  AllMusicContainer()
+    .tabItem { Text("All Music") }
+    .tag("allMusic")
+  AlbumsContainer()
+    .tabItem { Text("Albums") }
+    .tag("albums")
+  PlaylistsContainer()
+    .tabItem { Text("Playlists") }
+    .tag("playlists")
 }
 ```
 
-### Stack navigation
+### StackNavigationView
 Create a new `StackNavigationView` to display the app's navigation as a stack. The `View.stackRoute()` methods create the next item in the stack. Think of them as a UIViewController in a UINavigationController. The view inside the route is a branch, and a route may contain one or more of them. In the example, a new route is created with a single branch that displays the `ItemDetails(id:)` view.
 
 When a user taps the `RouteLink`, it will navigate to the route with the `ItemDetails(id:)`. The id type can be anything that is convertible from a `String` such as an `Int`. The library automatically converts path parameters to match the type required by the route.

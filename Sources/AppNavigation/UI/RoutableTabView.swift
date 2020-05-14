@@ -8,15 +8,15 @@ public struct RoutableTabView<Content, T>: View where Content: View, T: Lossless
   @MappedDispatch() private var dispatch
 
   private var content: Content
-  private var initialValue: T
+  private var initialTab: T
 
   /// Initiate a new `RouteableTabView`.
   /// - Parameters:
-  ///   - initialValue: The initial selected tab.
+  ///   - initialTab: The initial selected tab.
   ///   - content: The contents of the tabView. Use the same API as a SwiftUI `TabView` to set up the tab items.
-  public init(initialValue: T, @ViewBuilder content: () -> Content) {
+  public init(initialTab: T, @ViewBuilder content: () -> Content) {
     self.content = content()
-    self.initialValue = initialValue
+    self.initialTab = initialTab
   }
 
   public var body: some View {
@@ -32,7 +32,7 @@ public struct RoutableTabView<Content, T>: View where Content: View, T: Lossless
   }
 
   private func getPathParam(routeInfo: RouteInfo, leg: RouteLeg?) -> Binding<T> {
-    let pathParam = leg.flatMap { T($0.component) } ?? initialValue
+    let pathParam = leg.flatMap { T($0.component) } ?? initialTab
     return Binding(
       get: { pathParam },
       set: {
