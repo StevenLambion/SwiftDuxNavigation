@@ -1,3 +1,5 @@
+#if canImport(UIKit)
+
 import SwiftDux
 import SwiftUI
 
@@ -116,3 +118,5 @@ extension StackNavigationCoordinator: UIGestureRecognizerDelegate {
     return true
   }
 }
+
+#endif

@@ -5,7 +5,7 @@ import SwiftUI
 ///
 /// This is useful if there isn't a proper view for the current route path or the route
 /// becomes invalid for the use case.
-public struct Redirect<Content>: View where Content: View {
+public struct Redirect<Content>: ConnectableView where Content: View {
   @Environment(\.routeInfo) private var routeInfo
   @MappedDispatch() private var dispatch
 
@@ -26,14 +26,20 @@ public struct Redirect<Content>: View where Content: View {
     self.enabled = enabled
     self.content = content()
   }
+  
+  public func map(state: NavigationStateRoot) -> String? {
+    routeInfo.resolve(in: state)?.path
+  }
 
-  public var body: some View {
-    content.onAppear {
-      guard self.enabled else { return }
-      guard let absolutePath = self.path.standardizePath(withBasePath: self.routeInfo.path) else { return }
-      if !self.routeInfo.path.starts(with: absolutePath) {
-        self.dispatch(NavigationAction.navigate(to: absolutePath, in: self.routeInfo.sceneName, animate: self.animate))
-      }
+  public func body(props: String) -> some View {
+    content.onAppear { self.redirect(path: props) }
+  }
+  
+  private func redirect(path: String) {
+    guard self.enabled else { return }
+    guard let absolutePath = self.path.standardizePath(withBasePath: self.routeInfo.path) else { return }
+    if path != absolutePath && !path.starts(with: absolutePath) {
+      self.dispatch(NavigationAction.navigate(to: absolutePath, in: self.routeInfo.sceneName, animate: self.animate))
     }
   }
 }
