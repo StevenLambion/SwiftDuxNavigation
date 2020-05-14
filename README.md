@@ -24,11 +24,12 @@ This is an experimental library that implements a deep-link routing API for Swif
 - `Redirect` - Conditionally redirects the route.
 - `RouteContents` - Create custom route views.
 
-## Thing to do
+## Things to do
 - Error handling
 - Graceful recovery of invalid routes.
 - macOS support
 - SplitView support
+- Modal support
 - Save routing state of inactive tabs.
 - Make swipe navigation optional.
 
