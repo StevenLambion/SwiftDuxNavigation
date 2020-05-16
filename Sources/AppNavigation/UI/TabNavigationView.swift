@@ -4,7 +4,7 @@ import SwiftUI
 /// A tab view that navigates using  routes.
 ///
 /// TODO - Persist tab state
-public struct RoutableTabView<Content, T>: View where Content: View, T: LosslessStringConvertible & Hashable {
+public struct TabNavigationView<Content, T>: View where Content: View, T: LosslessStringConvertible & Hashable {
   @MappedDispatch() private var dispatch
 
   private var content: Content

@@ -19,7 +19,7 @@ This is an experimental library that implements a deep-link routing API for Swif
   - Uses UINavigationController on iOS.
     - Use gestures to hide the navigation bar or navigate back.
     - Works with SwiftUI navigation bar features.
-- `RoutableTabView` - Display a tab view of routable branches.
+- `TabNavigationView` - Display a tab view of routable branches.
   - Use `View.tabItem` just like the regular `TabView`.
 - `Redirect` - Conditionally redirects the route.
 - `RouteContents` - Create custom route views.
@@ -89,9 +89,9 @@ This is an experimental library that implements a deep-link routing API for Swif
 
 [Checkout the SwiftDux Todo Example](https://github.com/StevenLambion/SwiftUI-Todo-Example/tree/swiftdux-navigation).
 
-### RoutableTabView
+### TabNavigationView
 ```swift
-RoutableTabView(initialTab: "allMusic") {
+TabNavigationView(initialTab: "allMusic") {
   AllMusicContainer()
     .tabItem { Text("All Music") }
     .tag("allMusic")
