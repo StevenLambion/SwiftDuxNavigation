@@ -7,36 +7,52 @@
   ///
   /// This should be placed at the root of the application or scene. Any environment objects must be added outside of this
   /// view, so they will propagate down to all view heirarchies.
-  public struct RootNavigationView<RootView>: UIViewControllerRepresentable where RootView: View {
+  public struct RootNavigationView<RootView>: View where RootView: View {
     public var rootView: RootView
 
     public init(@ViewBuilder rootView: () -> RootView) {
       self.rootView = rootView()
     }
 
-    public func makeUIViewController(context: Context) -> UIHostingController<RootView> {
+    public var body: some View {
+      RootNavigationHostingView {
+        rootView
+      }
+      .background(Color.clear)
+      .edgesIgnoringSafeArea(.all)
+    }
+  }
+
+  internal struct RootNavigationHostingView<RootView>: UIViewControllerRepresentable where RootView: View {
+    var rootView: RootView
+
+    init(@ViewBuilder rootView: () -> RootView) {
+      self.rootView = rootView()
+    }
+
+    func makeUIViewController(context: Context) -> UIHostingController<RootView> {
       return UIHostingController(rootView: rootView)
     }
 
     /// Cleans up the presented `UIViewController` (and coordinator) in
     /// anticipation of their removal.
-    public static func dismantleUIViewController(
+    static func dismantleUIViewController(
       _ uiViewController: UIHostingController<RootView>,
       coordinator: RootNavigationViewCooordinator
     ) {}
 
-    public func updateUIViewController(_ uiViewController: UIHostingController<RootView>, context: Context) {
+    func updateUIViewController(_ uiViewController: UIHostingController<RootView>, context: Context) {
     }
 
-    public func makeCoordinator() -> RootNavigationViewCooordinator {
+    func makeCoordinator() -> RootNavigationViewCooordinator {
       return RootNavigationViewCooordinator()
     }
   }
 
-  extension RootNavigationView {
+  extension RootNavigationHostingView {
 
     /// Currently not implemented.
-    public class RootNavigationViewCooordinator {
+    class RootNavigationViewCooordinator {
 
     }
   }
