@@ -1,16 +1,20 @@
-import SwiftUI
+#if canImport(UIKit)
 
-internal final class StackRoutePreferenceKey: PreferenceKey {
-  static var defaultValue: [StackRoute] = []
+  import SwiftUI
 
-  static func reduce(value: inout [StackRoute], nextValue: () -> [StackRoute]) {
-    value = nextValue()
+  internal final class StackRoutePreferenceKey: PreferenceKey {
+    static var defaultValue: [StackRoute] = []
+
+    static func reduce(value: inout [StackRoute], nextValue: () -> [StackRoute]) {
+      value = nextValue()
+    }
   }
-}
 
-extension View {
+  extension View {
 
-  func stackRoutePreference(_ routes: [StackRoute]) -> some View {
-    self.preference(key: StackRoutePreferenceKey.self, value: routes)
+    func stackRoutePreference(_ routes: [StackRoute]) -> some View {
+      self.preference(key: StackRoutePreferenceKey.self, value: routes)
+    }
   }
-}
+
+#endif

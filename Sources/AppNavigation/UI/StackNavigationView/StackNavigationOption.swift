@@ -1,49 +1,41 @@
-import SwiftUI
+#if canImport(UIKit)
 
-internal enum StackNavigationOption: Hashable {
-  case swipeGesture(Bool)
-  case hideBarsOnTap(Bool)
-  case hideBarsOnSwipe(Bool)
-  case hidesBarsWhenVerticallyCompact(Bool)
-  case hidesBarsWhenKeyboardAppears(Bool)
-  case barTintColor(UIColor?)
+  import SwiftUI
 
-  static var defaultOptions: Set<StackNavigationOption> = Set([
-    .swipeGesture(true),
-    .hideBarsOnTap(false),
-    .hideBarsOnSwipe(false),
-    .hidesBarsWhenVerticallyCompact(false),
-    .hidesBarsWhenKeyboardAppears(false),
-    .barTintColor(nil),
-  ])
-}
+  internal enum StackNavigationOption: Hashable {
+    case swipeGesture(Bool)
+    case hideBarsOnTap(Bool)
+    case hideBarsOnSwipe(Bool)
+    case hidesBarsWhenVerticallyCompact(Bool)
+    case hidesBarsWhenKeyboardAppears(Bool)
+    case barTintColor(UIColor?)
 
-extension View {
-
-  func navigationPreference(_ preference: Set<StackNavigationOption>) -> some View {
-    self.preference(key: StackNavigationPreferenceKey.self, value: preference)
+    static var defaultOptions: Set<StackNavigationOption> = Set([
+      .swipeGesture(true),
+      .hideBarsOnTap(false),
+      .hideBarsOnSwipe(false),
+      .hidesBarsWhenVerticallyCompact(false),
+      .hidesBarsWhenKeyboardAppears(false),
+      .barTintColor(nil),
+    ])
   }
-}
 
-internal final class StackNavigationPreferenceKey: PreferenceKey {
-  static var defaultValue = StackNavigationOption.defaultOptions
+  extension View {
 
-  static func reduce(value: inout Set<StackNavigationOption>, nextValue: () -> Set<StackNavigationOption>) {
-    value = value.union(nextValue())
+    func navigationPreference(_ preference: Set<StackNavigationOption>) -> some View {
+      self.preference(key: StackNavigationPreferenceKey.self, value: preference)
+    }
   }
-}
 
-extension View {
+  internal final class StackNavigationPreferenceKey: PreferenceKey {
+    static var defaultValue = StackNavigationOption.defaultOptions
 
-  //  func stackNavigationTransition(_ transition: StackNavigationTransition) ->  some View {
-  //    self.navigationPreference([.transition(transition)])
-  //  }
-  //  
-  //  func stackNavigationTransitionTiming(_ timing: StackNavigationTransitionTiming) ->  some View {
-  //    self.navigationPreference([.transitionTimimg(timing)])
-  //  }
+    static func reduce(value: inout Set<StackNavigationOption>, nextValue: () -> Set<StackNavigationOption>) {
+      value = value.union(nextValue())
+    }
+  }
 
-  #if canImport(UIKit)
+  extension View {
 
     /// Navigate back in a stack navigation view using a swipe gesture.
     /// - Parameter enabled: Is enabled
@@ -71,5 +63,6 @@ extension View {
     public func stackNavigationBarTintColor(_ color: UIColor) -> some View {
       self.navigationPreference([.barTintColor(color)])
     }
-  #endif
-}
+  }
+
+#endif

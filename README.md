@@ -14,13 +14,11 @@ This is an experimental library that implements a deep-link routing API for Swif
 
 ## Views
 - `RootNavigationView` - Initiates the ground work.
-    - It shares environment objects across view hierarchies.
+    - Shares environment objects across view hierarchies.
 - `StackNavigationView` - Stacks routes on top of each other.
-  - Uses UINavigationController on iOS.
-    - Use gestures to hide the navigation bar or navigate back.
-    - Works with SwiftUI navigation bar features.
+  - Use gestures to navigate back or hide the navigation bar.
+  - Works with SwiftUI's navigation bar API.
 - `TabNavigationView` - Display a tab view of routable branches.
-  - Use `View.tabItem` just like the regular `TabView`.
 - `Redirect` - Conditionally redirects the route.
 - `RouteContents` - Create custom route views.
 
@@ -105,6 +103,21 @@ List {
 
 [Checkout the SwiftDux Todo Example](https://github.com/StevenLambion/SwiftUI-Todo-Example/tree/swiftdux-navigation).
 
+### RouteLink
+Navigate to a new route relative to the containing view.
+
+```swift
+// Pass a single path parameter or component.
+let id = 123
+RouteLink(path: id) { Text("Label") }
+
+// Go up a level
+RouteLink(path: "..")  { Text("Label") }
+
+// Absolute path
+RouteLink(path: "/person/\(id)/company")  { Text("Label") }
+```
+
 ### TabNavigationView
 ```swift
 TabNavigationView(initialTab: "allMusic") {
@@ -141,7 +154,7 @@ StackNavigationView {
   }
 }
 ```
-### Static branching
+#### Static branching
 To add multiple branches to a route, use the `View.branch(_:isDefault:)` method. This gives the branches a name to specify the active one. Think of it as the `View.tag(_:)` method for a `TabView`. In cases where a branch isn't specified, the application can redirect to a default one.
 
 ```swift
@@ -158,7 +171,7 @@ StackNavigationView {
 RouteLink(path: "/settings")
 ```
 
-### Dynamic branching
+#### Dynamic branching
 Dynamic routes pass their last path component to its branches as a path parameter. In some cases, this may lead to two or more consecutive dynamic routes that form a path made up entirely of path parameters. To resolve this, specify branch names on the dynamic routes.
 
 ```swift
@@ -177,17 +190,4 @@ StackNavigationView {
 
 // In a view somewhere else: 
 RouteLink(path: "/people/\(person.id)/companies/\(company.id)")
-```
-
-### RouteLinks
-```swift
-// Pass a single path parameter or component.
-let id = 123
-RouteLink(path: id) { Text("Label") }
-
-// Go up a level
-RouteLink(path: "..")  { Text("Label") }
-
-// Absolute path
-RouteLink(path: "/person/\(id)/company")  { Text("Label") }
 ```

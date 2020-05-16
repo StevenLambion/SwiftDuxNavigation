@@ -42,7 +42,11 @@ public struct Redirect<Content>: ConnectableView where Content: View {
   }
 
   public func body(props: Props) -> some View {
-    content.onAppear { self.redirect(props: props) }
+    Group {
+      content
+      // Force onAppear to get called if content is nil.
+      Text(verbatim: "").frame(width: 0, height: 0, alignment: .center)
+    }.onAppear { self.redirect(props: props) }
   }
 
   private func redirect(props: Props) {

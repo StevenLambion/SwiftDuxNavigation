@@ -37,7 +37,6 @@
       coordinator.setRootView(rootView: rootView)
       coordinator.rootPath = rootPath
       coordinator.animate = animate
-
       return coordinator
     }
   }

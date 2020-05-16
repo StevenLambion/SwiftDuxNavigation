@@ -1,53 +1,57 @@
-import SwiftDux
-import SwiftUI
+#if canImport(UIKit)
 
-internal struct StackRouteViewModifier<BranchView>: ViewModifier where BranchView: View {
-  @MappedDispatch() private var dispatch
+  import SwiftDux
+  import SwiftUI
 
-  var branchView: BranchView
+  internal struct StackRouteViewModifier<BranchView>: ViewModifier where BranchView: View {
+    @MappedDispatch() private var dispatch
 
-  @State private var childRoutes: [StackRoute] = []
-  @State private var stackNavigationOptions: Set<StackNavigationOption> = Set()
+    var branchView: BranchView
 
-  func body(content: Content) -> some View {
-    RouteContents { routeInfo, leg, route in
-      self.routeContents(content: content, routeInfo: routeInfo, leg: leg, route: route)
-    }
-  }
+    @State private var childRoutes: [StackRoute] = []
+    @State private var stackNavigationOptions: Set<StackNavigationOption> = Set()
 
-  private func routeContents(content: Content, routeInfo: RouteInfo, leg: RouteLeg?, route: RouteState) -> some View {
-    Group {
-      if leg != nil {
-        content
-          .onPreferenceChange(StackRoutePreferenceKey.self) {
-            self.childRoutes = $0
-          }
-          .onPreferenceChange(StackNavigationPreferenceKey.self) {
-            self.stackNavigationOptions = $0
-          }
-          .stackRoutePreference([createRoute(from: routeInfo)] + childRoutes)
-          .navigationPreference(stackNavigationOptions)
-      } else {
-        content
+    func body(content: Content) -> some View {
+      RouteContents { routeInfo, leg, route in
+        self.routeContents(content: content, routeInfo: routeInfo, leg: leg, route: route)
       }
     }
+
+    private func routeContents(content: Content, routeInfo: RouteInfo, leg: RouteLeg?, route: RouteState) -> some View {
+      Group {
+        if leg != nil {
+          content
+            .onPreferenceChange(StackRoutePreferenceKey.self) {
+              self.childRoutes = $0
+            }
+            .onPreferenceChange(StackNavigationPreferenceKey.self) {
+              self.stackNavigationOptions = $0
+            }
+            .stackRoutePreference([createRoute(from: routeInfo)] + childRoutes)
+            .navigationPreference(stackNavigationOptions)
+        } else {
+          content
+        }
+      }
+    }
+
+    private func createRoute(from routeInfo: RouteInfo) -> StackRoute {
+      StackRoute(
+        path: routeInfo.path,
+        fromBranch: routeInfo.isBranch,
+        view: branchView
+      )
+    }
   }
 
-  private func createRoute(from routeInfo: RouteInfo) -> StackRoute {
-    StackRoute(
-      path: routeInfo.path,
-      fromBranch: routeInfo.isBranch,
-      view: branchView
-    )
-  }
-}
+  extension View {
 
-extension View {
-
-  /// Add a new stack route.
-  /// - Parameter branchView: The view of the route.
-  /// - Returns: A view.
-  public func stackRoute<V>(@ViewBuilder branchView: () -> V) -> some View where V: View {
-    self.modifier(StackRouteViewModifier(branchView: branchView()))
+    /// Add a new stack route.
+    /// - Parameter branchView: The view of the route.
+    /// - Returns: A view.
+    public func stackRoute<V>(@ViewBuilder branchView: () -> V) -> some View where V: View {
+      self.modifier(StackRouteViewModifier(branchView: branchView()))
+    }
   }
-}
+
+#endif
