@@ -10,6 +10,7 @@ where Content: View, T: LosslessStringConvertible & Equatable, BranchView: View 
   internal var branchView: (T) -> BranchView
 
   @State private var childRoutes: [StackRoute] = []
+  @State private var stackNavigationOptions: Set<StackNavigationOption> = Set()
 
   public var body: some View {
     RouteContents(content: routeContents)
@@ -19,7 +20,9 @@ where Content: View, T: LosslessStringConvertible & Equatable, BranchView: View 
     let pathParam = leg.flatMap { !$0.component.isEmpty ? T($0.component) : nil }
     return Group {
       if pathParam != nil {
-        content.stackRoutePreference([createRoute(pathParam: pathParam!)] + childRoutes)
+        content
+          .stackRoutePreference([createRoute(pathParam: pathParam!)] + childRoutes)
+          .navigationPreference(stackNavigationOptions)
       } else {
         content
       }
@@ -35,6 +38,9 @@ where Content: View, T: LosslessStringConvertible & Equatable, BranchView: View 
         .environment(\.routeInfo, nextRouteInfo)
         .onPreferenceChange(StackRoutePreferenceKey.self) {
           self.childRoutes = $0
+        }
+        .onPreferenceChange(StackNavigationPreferenceKey.self) {
+          self.stackNavigationOptions = $0
         }
     )
   }

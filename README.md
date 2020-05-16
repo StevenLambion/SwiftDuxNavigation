@@ -17,7 +17,7 @@ This is an experimental library that implements a deep-link routing API for Swif
     - It shares environment objects across view hierarchies.
 - `StackNavigationView` - Stacks routes on top of each other.
   - Uses UINavigationController on iOS.
-    - Supports swipe gesture.
+    - Use gestures to hide the navigation bar or navigate back.
     - Works with SwiftUI navigation bar features.
 - `RoutableTabView` - Display a tab view of routable branches.
   - Use `View.tabItem` just like the regular `TabView`.
@@ -31,7 +31,7 @@ This is an experimental library that implements a deep-link routing API for Swif
 - SplitView support
 - Modal support
 - Save routing state of inactive tabs.
-- Make swipe navigation optional.
+- Fix initial navigation bar title animation.
 
 [swift-image]: https://img.shields.io/badge/swift-5.2-orange.svg
 [ios-image]: https://img.shields.io/badge/platforms-iOS%2013%20-222.svg

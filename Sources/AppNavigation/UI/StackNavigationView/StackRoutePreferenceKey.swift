@@ -1,6 +1,6 @@
 import SwiftUI
 
-internal struct StackRoutePreferenceKey: PreferenceKey {
+internal final class StackRoutePreferenceKey: PreferenceKey {
   static var defaultValue: [StackRoute] = []
 
   static func reduce(value: inout [StackRoute], nextValue: () -> [StackRoute]) {

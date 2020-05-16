@@ -6,7 +6,6 @@
   internal struct NativeStackNavigationView<RootView>: UIViewControllerRepresentable
   where RootView: View {
     @Environment(\.routeInfo) private var routeInfo
-    @MappedState() private var state: NavigationStateRoot
     @MappedDispatch() private var dispatch
 
     var rootPath: String

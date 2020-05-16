@@ -6,16 +6,16 @@
   internal struct StackRoute: Equatable {
     var path: String
     var fromBranch: Bool = false
-    var viewController: () -> UIViewController
+    var viewController: UIViewController
 
-    init(path: String, fromBranch: Bool = false, viewController: @escaping () -> UIViewController) {
+    init(path: String, fromBranch: Bool = false, viewController: UIViewController) {
       self.path = path
       self.fromBranch = fromBranch
       self.viewController = viewController
     }
 
     init<V>(path: String, fromBranch: Bool = false, view: V) where V: View {
-      self.init(path: path, fromBranch: fromBranch, viewController: { UIHostingController(rootView: view) })
+      self.init(path: path, fromBranch: fromBranch, viewController: UIHostingController(rootView: view))
     }
 
     static func == (lhs: StackRoute, rhs: StackRoute) -> Bool {
@@ -37,6 +37,7 @@
         navigationController?.delegate = self
         navigationController?.interactivePopGestureRecognizer?.delegate = self
         navigationController?.interactivePopGestureRecognizer?.isEnabled = true
+        navigationController?.navigationBar.prefersLargeTitles = true
         updateNavigation()
       }
     }
@@ -45,6 +46,12 @@
     private var routes: [StackRoute] = []
     private var viewControllersByPath: [String: UIViewController] = [:]
 
+    private var enableSwipeNavigation: Bool = true {
+      didSet {
+        navigationController?.interactivePopGestureRecognizer?.isEnabled = enableSwipeNavigation
+      }
+    }
+
     init(dispatch: ActionDispatcher) {
       self.dispatch = dispatch
       super.init()
@@ -52,9 +59,13 @@
 
     func setRootView<V>(rootView: V) where V: View {
       self.setRootViewInternal(
-        rootView: rootView.onPreferenceChange(StackRoutePreferenceKey.self) { [weak self] in
-          self?.updateRoutes($0)
-        }
+        rootView:
+          rootView
+          .onPreferenceChange(StackRoutePreferenceKey.self) { [weak self] in
+            self?.updateRoutes($0)
+          }.onPreferenceChange(StackNavigationPreferenceKey.self) { [weak self] in
+            self?.updateOptions($0)
+          }
       )
     }
 
@@ -75,18 +86,53 @@
       }
       newRoutes.forEach {
         if viewControllersByPath[$0.path] == nil {
-          viewControllersByPath[$0.path] = $0.viewController()
+          viewControllersByPath[$0.path] = $0.viewController
         }
       }
       self.routes = newRoutes
       updateNavigation()
     }
 
+    private func updateOptions(_ options: Set<StackNavigationOption>) {
+      options.forEach { option in
+        switch option {
+        case .swipeGesture(let enabled):
+          self.enableSwipeNavigation = enabled
+        case .hideBarsOnTap(let enabled):
+          self.navigationController?.hidesBarsOnTap = enabled
+        case .hideBarsOnSwipe(let enabled):
+          self.navigationController?.hidesBarsOnSwipe = enabled
+        case .hidesBarsWhenKeyboardAppears(let enabled):
+          self.navigationController?.hidesBarsWhenKeyboardAppears = enabled
+        case .hidesBarsWhenVerticallyCompact(let enabled):
+          self.navigationController?.hidesBarsWhenVerticallyCompact = enabled
+        case .barTintColor(let color):
+          self.navigationController?.navigationBar.tintColor = color
+        }
+      }
+    }
+
     private func updateNavigation() {
       guard let rootViewController = rootViewController else { return }
       let viewControllers: [UIViewController] =
         [rootViewController] + routes.compactMap { self.viewControllersByPath[$0.path] }
-      navigationController?.setViewControllers(viewControllers, animated: animate)
+
+      if animate == true && viewControllers.count > 1 && viewControllers.count > navigationController?.viewControllers.count ?? 0 {
+        navigationController?.setViewControllers(viewControllers, animated: animate)
+      } else {
+        navigationController?.setViewControllers(viewControllers, animated: animate)
+      }
+    }
+
+    private func shouldPerformPush(with viewControllers: [UIViewController]) -> Bool {
+      guard let currentCount = navigationController?.viewControllers.count else { return false }
+      guard currentCount > 0 && viewControllers.count - 1 == currentCount else { return false }
+      for i in 0..<currentCount {
+        if viewControllers[i] != navigationController?.viewControllers[i] {
+          return false
+        }
+      }
+      return true
     }
   }
 
@@ -115,7 +161,7 @@
   extension StackNavigationCoordinator: UIGestureRecognizerDelegate {
 
     func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-      return true
+      return enableSwipeNavigation
     }
   }
 
