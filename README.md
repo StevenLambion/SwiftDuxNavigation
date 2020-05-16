@@ -117,7 +117,10 @@ StackNavigationView {
         Text(item.name)
       }
     }
-  }.stackRoute { id in
+  }
+  .navigationBarTitle(Text("Items"), displayMode: .large)
+  .hideNavigationBar(onSwipe: true)
+  .stackRoute { id in
     ItemDetails(id: id)
   }
 }
