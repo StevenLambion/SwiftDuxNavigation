@@ -1,7 +1,7 @@
 import SwiftDux
 import SwiftUI
 
-public struct DynamicStackRouteViewModifier<T, BranchView>: ViewModifier
+internal struct DynamicStackRouteViewModifier<T, BranchView>: ViewModifier
 where T: LosslessStringConvertible & Equatable, BranchView: View {
   @Environment(\.routeInfo) private var routeInfo
   @MappedDispatch() private var dispatch
@@ -11,7 +11,7 @@ where T: LosslessStringConvertible & Equatable, BranchView: View {
   @State private var childRoutes: [StackRoute] = []
   @State private var stackNavigationOptions: Set<StackNavigationOption> = Set()
 
-  public func body(content: Content) -> some View {
+  func body(content: Content) -> some View {
     RouteContents { routeInfo, leg, route in
       self.routeContents(content: content, routeInfo: routeInfo, leg: leg, route: route)
     }
@@ -22,6 +22,7 @@ where T: LosslessStringConvertible & Equatable, BranchView: View {
     return Group {
       if pathParam != nil {
         content
+          .environment(\.routeInfo, routeInfo.next(with: pathParam!))
           .stackRoutePreference([createRoute(pathParam: pathParam!)] + childRoutes)
           .navigationPreference(stackNavigationOptions)
       } else {

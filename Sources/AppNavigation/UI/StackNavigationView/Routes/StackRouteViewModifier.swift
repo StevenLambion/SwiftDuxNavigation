@@ -1,7 +1,7 @@
 import SwiftDux
 import SwiftUI
 
-public struct StackRouteViewModifier<BranchView>: ViewModifier where BranchView: View {
+internal struct StackRouteViewModifier<BranchView>: ViewModifier where BranchView: View {
   @MappedDispatch() private var dispatch
 
   var branchView: BranchView
@@ -9,7 +9,7 @@ public struct StackRouteViewModifier<BranchView>: ViewModifier where BranchView:
   @State private var childRoutes: [StackRoute] = []
   @State private var stackNavigationOptions: Set<StackNavigationOption> = Set()
 
-  public func body(content: Content) -> some View {
+  func body(content: Content) -> some View {
     RouteContents { routeInfo, leg, route in
       self.routeContents(content: content, routeInfo: routeInfo, leg: leg, route: route)
     }

@@ -1,13 +1,13 @@
 import SwiftDux
 import SwiftUI
 
-public struct StackRouteBranchViewModifier: ViewModifier {
+internal struct StackRouteBranchViewModifier: ViewModifier {
   @MappedDispatch() private var dispatch
 
   var name: String
   var isDefault: Bool
 
-  public func body(content: Content) -> some View {
+  func body(content: Content) -> some View {
     RouteContents { routeInfo, leg, route in
       self.routeContents(content: content, routeInfo: routeInfo, leg: leg, route: route)
     }

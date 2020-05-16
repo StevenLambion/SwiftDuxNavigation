@@ -24,12 +24,16 @@ This is an experimental library that implements a deep-link routing API for Swif
 - `Redirect` - Conditionally redirects the route.
 - `RouteContents` - Create custom route views.
 
+## Modals
+- `View.sheetRoute(_:content:)` - Displays a sheet as a route.
+- `View.actionSheetRoute(_:content:)` - Displays an action sheet as a route.
+- `View.alertRoute(_:content:)` - Displays an alert as a route.
+
 ## Things to do
 - Error handling
 - Graceful recovery of invalid routes.
 - macOS support
 - SplitView support
-- Modal support
 - Save routing state of inactive tabs.
 
 [swift-image]: https://img.shields.io/badge/swift-5.2-orange.svg
@@ -82,6 +86,18 @@ This is an experimental library that implements a deep-link routing API for Swif
       }
     }
     ```
+
+## Route Precedence
+The precedence of an active route is based on its position in the view hierarchy. In cases where two or more routes share the same parent route, the higher-level route will be chosen. In the following example, the alert route will take precedence over the stack route when the relative route is set to "display-alert".
+```swift
+List {
+  ...
+}
+.stackRoute { id in
+  RecipeEditorContainer(id: id)
+}
+.alertRoute("display-alert") { Alert(title: Text("Hello world!")) }
+```
 
 ## Examples
 

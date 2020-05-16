@@ -40,6 +40,7 @@ public struct RouteContents<Content>: ConnectableView where Content: View {
     if props.shouldComplete {
       self.dispatch(NavigationAction.completeRouting(scene: self.routeInfo.sceneName))
     }
-    return content(routeInfo, props.leg, props.route)
+    // Use latest route info in case a parent view changed it during the current SwiftUI update.
+    return content(routeInfo, props.route.legsByPath[routeInfo.path], props.route)
   }
 }
