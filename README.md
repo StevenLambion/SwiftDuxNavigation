@@ -31,7 +31,6 @@ This is an experimental library that implements a deep-link routing API for Swif
 - SplitView support
 - Modal support
 - Save routing state of inactive tabs.
-- Fix initial navigation bar title animation.
 
 [swift-image]: https://img.shields.io/badge/swift-5.2-orange.svg
 [ios-image]: https://img.shields.io/badge/platforms-iOS%2013%20-222.svg

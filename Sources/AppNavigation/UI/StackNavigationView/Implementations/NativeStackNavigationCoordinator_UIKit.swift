@@ -86,6 +86,7 @@
       }
       newRoutes.forEach {
         if viewControllersByPath[$0.path] == nil {
+          navigationController?.view.addSubview($0.viewController.view)
           viewControllersByPath[$0.path] = $0.viewController
         }
       }
@@ -116,8 +117,14 @@
       guard let rootViewController = rootViewController else { return }
       let viewControllers: [UIViewController] =
         [rootViewController] + routes.compactMap { self.viewControllersByPath[$0.path] }
-
-      if animate == true && viewControllers.count > 1 && viewControllers.count > navigationController?.viewControllers.count ?? 0 {
+      
+      // This is a hack to get UIHostingController to pre-render before getting pushed on the stack. without it
+      // the navigationItem won't be set until after the animation. This might explain NavigationLink's destination
+      // behavior.
+      if shouldPerformPush(with: viewControllers) {
+        let previousViewControllers = navigationController?.viewControllers
+        navigationController?.setViewControllers(viewControllers, animated: false)
+        navigationController?.setViewControllers(previousViewControllers!, animated: false)
         navigationController?.setViewControllers(viewControllers, animated: animate)
       } else {
         navigationController?.setViewControllers(viewControllers, animated: animate)
