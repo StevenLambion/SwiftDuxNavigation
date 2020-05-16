@@ -1,22 +1,23 @@
 import SwiftDux
 import SwiftUI
 
-public struct DynamicStackRouteView<Content, T, BranchView>: View
-where Content: View, T: LosslessStringConvertible & Equatable, BranchView: View {
+public struct DynamicStackRouteViewModifier<T, BranchView>: ViewModifier
+where T: LosslessStringConvertible & Equatable, BranchView: View {
   @Environment(\.routeInfo) private var routeInfo
   @MappedDispatch() private var dispatch
 
-  internal var content: Content
-  internal var branchView: (T) -> BranchView
+  var branchView: (T) -> BranchView
 
   @State private var childRoutes: [StackRoute] = []
   @State private var stackNavigationOptions: Set<StackNavigationOption> = Set()
 
-  public var body: some View {
-    RouteContents(content: routeContents)
+  public func body(content: Content) -> some View {
+    RouteContents { routeInfo, leg, route in
+      self.routeContents(content: content, routeInfo: routeInfo, leg: leg, route: route)
+    }
   }
 
-  private func routeContents(routeInfo: RouteInfo, leg: RouteLeg?, route: RouteState) -> some View {
+  private func routeContents(content: Content, routeInfo: RouteInfo, leg: RouteLeg?, route: RouteState) -> some View {
     let pathParam = leg.flatMap { !$0.component.isEmpty ? T($0.component) : nil }
     return Group {
       if pathParam != nil {
@@ -53,6 +54,6 @@ extension View {
   /// - Returns: A view.
   public func stackRoute<T, V>(@ViewBuilder branchView: @escaping (T) -> V) -> some View
   where T: LosslessStringConvertible & Equatable, V: View {
-    DynamicStackRouteView(content: self, branchView: branchView)
+    self.modifier(DynamicStackRouteViewModifier(branchView: branchView))
   }
 }
