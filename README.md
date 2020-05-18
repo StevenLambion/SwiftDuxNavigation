@@ -204,7 +204,7 @@ SplitNavigationView {
   PlaceholderNote()
 }
 .detailRoute("notes") { noteId in
-  NoteEditor(noteId)
+  NoteEditorContainer(id: noteId)
 }
 .splitNavigationPreferredDisplayMode(.allVisible)
 .splitNavigationShowDisplayModeButton(true)
