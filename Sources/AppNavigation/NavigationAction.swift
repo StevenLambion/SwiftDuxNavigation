@@ -30,10 +30,41 @@ extension NavigationAction {
   public static func navigate(
     to path: String,
     inScene scene: String = SceneState.mainSceneName,
-    isDetail: Bool,
+    isDetail: Bool = false,
     animate: Bool = true
   ) -> Action {
     NavigationAction.beginRouting(path: path, scene: scene, isDetail: isDetail, animate: animate)
+  }
+  
+  /// Navigate to a new path with a URL.
+  ///
+  /// The URL represents the entire path to a scene's routes. The first path component must be the name of the scene.
+  /// A fragment may be added to represent the detail route.
+  ///
+  /// `sceneName/path/to/route#/detail/route/`
+  ///
+  /// - Parameters:
+  ///   - url: A URL to the new path.
+  ///   - animate: Animate the navigational transition.
+  /// - Returns: The navigation action.
+  public static func navigate(
+    to url: URL,
+    animate: Bool = true
+  ) -> Action {
+    guard let sceneName = url.pathComponents.first else { return EmptyAction() }
+    var routePath = url.pathComponents.dropFirst().joined(separator: "/")
+    let detailRoutePath = url.fragment
+    
+    if routePath.isEmpty {
+      routePath = "/"
+    }
+    
+    return ActionPlan<NavigationStateRoot> { store in
+      store.send(navigate(to: routePath, inScene: sceneName, animate: true))
+      if let detailRoutePath = detailRoutePath {
+        store.send(navigate(to: detailRoutePath, inScene: sceneName, isDetail: true, animate: true))
+      }
+    }
   }
 
   /// Navigate to an ancestor path.

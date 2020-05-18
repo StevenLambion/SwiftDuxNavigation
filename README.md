@@ -11,12 +11,12 @@ This is an experimental library to implement a deep-link routing API for SwiftDu
 - Deep link style navigation.
 - Save and restore navigation between sessions by persisting the SwiftDux state.
 - Scene support to create separate routes between windows or UIScenes.
+- Master-detail routing support.
 
 ## Things to do
-- Error handling
 - Graceful recovery of invalid routes.
 - Save routing state for tabs.
-- macOS support
+- Finish macOS support (non-catalyst)
 
 ## Views
 - `RootNavigationView` - Initiates the ground work.
@@ -87,6 +87,69 @@ This is an experimental library to implement a deep-link routing API for SwiftDu
       }
     }
     ```
+
+## Navigating the application
+To navigate the application, use a `RouteLink` view, the `currentRoute` environment value, or dispatch a `NavigationAction`.
+
+### RouteLink
+A view that navigate to a new route relative to the containing view when the user taps it.
+
+```swift
+// Pass a single path parameter or component.
+let id = 123
+RouteLink(path: id) { Text("Label") }
+
+// Go up a level.
+RouteLink(path: "..")  { Text("Label") }
+
+// Pass an absolute path.
+RouteLink(path: "/person/\(id)/company")  { Text("Label") }
+
+// Navigate the detail route.
+RouteLink(path: id, isDetail: true) { Text("Label") }
+```
+
+### currentRoute
+An environment value that navigates the application relative to the current view's route.
+
+```swift
+@MappedDispatch() private var dispatch
+Environment(\.currentRoute) private var currentRoute
+
+// Pass a single path parameter or component.
+let id = 123
+dispatch(currentRoute.navigate(to: id))
+
+// Go up a level.
+dispatch(currentRoute.navigate(to: ".."))
+
+// Pass an absolute path.
+dispatch(currentRoute.navigate(to: "/person/\(id)/company"))
+
+// Navigate the detail route.
+dispatch(currentRoute.navigate(to: id, isDetail: true) { Text("Label") }
+```
+
+### NavigationAction
+You can use the navigation actions directly if the above options aren't available. It also provides an extra action to navigate by a URL. This can be useful if the application has a custom url scheme that launches a new scene for a specific view.
+
+```swift
+@MappedDispatch() private var dispatch
+
+// Navigate to a URL. The first path component is the scene's name.
+let url = URL(string: "main/notes")!
+dispatch(NavigationAction.navigate(to: url))
+
+// Navigate with a master-detail URL. Use a url fragment to specify the detail route when applicable.
+let url = URL(string: "main/notes#/note/123")!
+dispatch(NavigationAction.navigate(to: url)
+
+// Pass a single path parameter or component.
+dispatch(NavigationAction.navigate(to: "/notes", inScene: "main"))
+
+// Go up a level.
+dispatch(NavigationAction.navigate(to: "..", inScene: "main"))
+```
 
 ## Route Precedence
 The precedence of an active route is based on its position in the view hierarchy. In cases where two or more routes share the same parent route, the higher-level route will be chosen. In the following example, the alert route will take precedence over the stack route when the relative route is set to "display-alert".
