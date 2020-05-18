@@ -45,7 +45,7 @@ This is an experimental library to implement a deep-link routing API for SwiftDu
 
 ## Getting started
 
-1. Add navigation to the application state with `NavigationStateRoot`
+1. Add navigation support to the application state by adhering to the `NavigationStateRoot` protocol.
     ```swift
       struct AppState: NavigationStateRoot {
         var navigation: NavigationState = NavigationState()
@@ -57,7 +57,7 @@ This is an experimental library to implement a deep-link routing API for SwiftDu
       Store(state: AppState(), reducer: AppReducer() + NavigationReducer())
     ```
 
-1. Wrap your root view with `RootNavigationView`. Then attach any environment objects outside of the `RootNavigationView`. If the environment objects are not injected outside of this view, they may not propagate to all view hierarchies.
+1. Wrap your root view with `RootNavigationView`. Then attach any environment objects outside of it. If the environment objects are not injected outside of this view, they may not propagate to all view hierarchies.
     ```swift
       RootNavigationView {
         RootView()
@@ -89,10 +89,9 @@ This is an experimental library to implement a deep-link routing API for SwiftDu
     ```
 
 ## Navigating the application
-To navigate the application, use a `RouteLink` view, the `currentRoute` environment value, or dispatch a `NavigationAction`.
 
 ### RouteLink
-A view that navigate to a new route relative to the containing view when the user taps it.
+This is similar to a SwiftUI NavigationLink, and can be used just like one. It navigates to a new route relative to the containing view when the user taps it.
 
 ```swift
 // Pass a single path parameter or component.
@@ -109,8 +108,8 @@ RouteLink(path: "/person/\(id)/company")  { Text("Label") }
 RouteLink(path: id, isDetail: true) { Text("Label") }
 ```
 
-### currentRoute
-An environment value that navigates the application relative to the current view's route.
+### CurrentRoute
+CurrentRoute is an environment value that provides information about the current route of a view. It can also be used to navigates the application relative to that view's location.
 
 ```swift
 @MappedDispatch() private var dispatch
@@ -131,17 +130,17 @@ dispatch(currentRoute.navigate(to: id, isDetail: true) { Text("Label") }
 ```
 
 ### NavigationAction
-You can use the navigation actions directly if the above options aren't available. It also provides an extra action to navigate by a URL. This can be useful if the application has a custom url scheme that launches a new scene for a specific view.
+You can use the navigation actions directly if the above options aren't available. It also allows you to navigate by URL. This can be useful if the application has a custom url scheme that launches a new scene for a specific view.
 
 ```swift
 @MappedDispatch() private var dispatch
 
 // Navigate to a URL. The first path component is the scene's name.
-let url = URL(string: "main/notes")!
+let url = URL(string: "/main/notes")!
 dispatch(NavigationAction.navigate(to: url))
 
 // Navigate with a master-detail URL. Use a url fragment to specify the detail route when applicable.
-let url = URL(string: "main/notes#/note/123")!
+let url = URL(string: "/main/notes#/note/123")!
 dispatch(NavigationAction.navigate(to: url)
 
 // Pass a single path parameter or component.
@@ -152,7 +151,7 @@ dispatch(NavigationAction.navigate(to: "..", inScene: "main"))
 ```
 
 ## Route Precedence
-The precedence of an active route is based on its position in the view hierarchy. In cases where two or more routes share the same parent route, the higher-level route will be chosen. In the following example, the alert route will take precedence over the stack route when the relative route is set to "display-alert".
+The precedence of an active route is based on its position in the view hierarchy. In cases where two or more routes share the same parent route, the higher-level route will be chosen. In the following example, the alert route will take precedence over the stack route when the relevant route is set to "display-alert". Any other value will active the stack route instead.
 ```swift
 List {
   ...
@@ -168,21 +167,6 @@ List {
 ### Live Example
 
 [Checkout the SwiftDux Todo Example](https://github.com/StevenLambion/SwiftUI-Todo-Example/tree/swiftdux-navigation).
-
-### TabNavigationView
-```swift
-TabNavigationView(initialTab: "allMusic") {
-  AllMusicContainer()
-    .tabItem { Text("All Music") }
-    .tag("allMusic")
-  AlbumsContainer()
-    .tabItem { Text("Albums") }
-    .tag("albums")
-  PlaylistsContainer()
-    .tabItem { Text("Playlists") }
-    .tag("playlists")
-}
-```
 
 ### StackNavigationView
 Create a new `StackNavigationView` to display the app's navigation as a stack. The `View.stackRoute()` methods create the next item in the stack. Think of them as a UIViewController in a UINavigationController. The view inside the route is a branch, and a route may contain one or more of them. In the example, a new route is created with a single branch that displays the `ItemDetails(id:)` view.
@@ -244,7 +228,7 @@ RouteLink(path: "/people/\(person.id)/companies/\(company.id)")
 ```
 
 ### SplitNavigationView
-The SplitNavigationView uses UISplitViewController to display a master-detail format. Below is an example of a master-detail notes app. The SplitNavigationView automatically handles the expanded and collapsed display mode as long as an active detail route exists. The root detail route is ignored when in collapsed mode.
+The SplitNavigationView uses UISplitViewController on iOS to display a master-detail interface. Below is an example of a master-detail notes app. The SplitNavigationView automatically handles the expanding and collapsing of the detail route. The root detail route ("/") is ignored when in collapsed mode to provide a placeholder option.
 
 ```swift
 SplitNavigationView {
@@ -262,4 +246,19 @@ SplitNavigationView {
 
 // Use RouteLink to navigate to a detail route:
 RouteLink("notes/\(noteid)", isDetail: true)
+```
+
+### TabNavigationView
+```swift
+TabNavigationView(initialTab: "allMusic") {
+  AllMusicContainer()
+    .tabItem { Text("All Music") }
+    .tag("allMusic")
+  AlbumsContainer()
+    .tabItem { Text("Albums") }
+    .tag("albums")
+  PlaylistsContainer()
+    .tabItem { Text("Playlists") }
+    .tag("playlists")
+}
 ```
