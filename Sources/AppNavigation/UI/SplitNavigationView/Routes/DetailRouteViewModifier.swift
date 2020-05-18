@@ -11,7 +11,12 @@
 
     func body(content: Content) -> some View {
       var detailRoutes = self.detailRoutes
-      detailRoutes[name ?? "/"] = AnyView(DetailView(content: detailContent).environment(\.currentRoute, CurrentRoute(path: "/\(name ?? "")/", isDetail: true)))
+      detailRoutes[name ?? "/"] = {
+        AnyView(
+          DetailView(content: self.detailContent)
+            .environment(\.currentRoute, CurrentRoute(path: "/\(self.name ?? "")/", isDetail: true))
+        )
+      }
       return content.environment(\.detailRoutes, detailRoutes)
     }
   }

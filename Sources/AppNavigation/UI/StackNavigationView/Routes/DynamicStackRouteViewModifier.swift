@@ -6,7 +6,6 @@
   internal struct DynamicStackRouteViewModifier<T, BranchView>: ViewModifier
   where T: LosslessStringConvertible & Equatable, BranchView: View {
     @Environment(\.currentRoute) private var currentRoute
-    @MappedDispatch() private var dispatch
 
     var branchView: (T) -> BranchView
 
@@ -21,11 +20,12 @@
 
     private func routeContents(content: Content, currentRoute: CurrentRoute, leg: RouteLeg?, route: RouteState) -> some View {
       let pathParam = leg.flatMap { !$0.component.isEmpty ? T($0.component) : nil }
+      let nextRoute = pathParam != nil ? currentRoute.next(with: pathParam!) : nil
       return Group {
-        if pathParam != nil {
+        if nextRoute != nil {
           content
-            .id(leg!.component)
-            .environment(\.currentRoute, currentRoute.next(with: pathParam!))
+            .id(nextRoute!.path)
+            .environment(\.currentRoute, nextRoute!)
             .stackRoutePreference(createRoute(pathParam: pathParam!))
             .stackNavigationPreference(stackNavigationOptions)
         } else {

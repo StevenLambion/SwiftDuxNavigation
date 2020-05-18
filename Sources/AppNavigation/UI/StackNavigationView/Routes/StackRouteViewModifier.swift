@@ -4,8 +4,6 @@
   import SwiftUI
 
   internal struct StackRouteViewModifier<BranchView>: ViewModifier where BranchView: View {
-    @MappedDispatch() private var dispatch
-
     var branchView: BranchView
 
     @State private var childRoutes: StackRouteStorage = StackRouteStorage()

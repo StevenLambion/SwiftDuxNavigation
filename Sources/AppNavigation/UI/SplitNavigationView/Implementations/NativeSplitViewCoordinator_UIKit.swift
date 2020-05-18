@@ -12,7 +12,7 @@
       didSet { self.updateOptions(splitNavigationOptions) }
     }
 
-    var detailRoutes: [String: AnyView] = [:]
+    var detailRoutes: [String: () -> AnyView] = [:]
     var activeDetailRoute: String? = nil
     var currentRoute: CurrentRoute = CurrentRoute()
     var animate: Bool = true
@@ -25,7 +25,7 @@
     private var detailViewController: SplitViewUIHostingController<AnyView>?
     private var showDisplayModeButton: Bool = true
 
-    private var detailContent: AnyView? {
+    private var detailContent: (() -> AnyView)? {
       guard let activeDetailRoute = activeDetailRoute else { return nil }
       return detailRoutes[activeDetailRoute]
     }
@@ -50,7 +50,7 @@
           StackNavigationView {
             if context.isCollapsed && detailContent != nil && self.activeDetailRoute != "/" {
               masterContent.stackRoute {
-                detailContent
+                detailContent.map { $0() }
               }.environment(\.currentRoute, CurrentRoute(path: "/", isDetail: true))
             } else {
               masterContent
@@ -74,7 +74,7 @@
       let detailView = SplitViewContextProvider { context in
         if context.detailIsReady {
           StackNavigationView {
-            detailContent?.stackNavigationReplaceRoot(true)
+            detailContent.map { $0() }.stackNavigationReplaceRoot(true)
           }
           .environment((\.currentRoute), CurrentRoute(sceneName: self.currentRoute.sceneName, isDetail: true))
         }

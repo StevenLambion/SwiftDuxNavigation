@@ -41,6 +41,7 @@
         rootView: rootView
       )
       .opacity(props.hide ? 0 : 1)
+      .edgesIgnoringSafeArea(.all)
     }
   }
 

@@ -2,8 +2,6 @@ import SwiftDux
 import SwiftUI
 
 internal struct StackRouteBranchViewModifier: ViewModifier {
-  @MappedDispatch() private var dispatch
-
   var name: String
   var isDefault: Bool
 
@@ -16,9 +14,10 @@ internal struct StackRouteBranchViewModifier: ViewModifier {
   private func routeContents(content: Content, currentRoute: CurrentRoute, leg: RouteLeg?, route: RouteState) -> some View {
     let shouldRedirect = isDefault && route.path == currentRoute.path
     let isActive = leg?.component == name && !shouldRedirect
+    let nextRoute = currentRoute.next(with: name, isBranch: true)
     return Redirect(path: name, enabled: shouldRedirect) {
       if isActive {
-        content.environment(\.currentRoute, currentRoute.next(with: name, isBranch: true))
+        content.id(nextRoute.path).environment(\.currentRoute, nextRoute)
       }
     }
   }
