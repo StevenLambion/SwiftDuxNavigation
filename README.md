@@ -169,21 +169,6 @@ List {
 
 [Checkout the SwiftDux Todo Example](https://github.com/StevenLambion/SwiftUI-Todo-Example/tree/swiftdux-navigation).
 
-### RouteLink
-Navigate to a new route relative to the containing view.
-
-```swift
-// Pass a single path parameter or component.
-let id = 123
-RouteLink(path: id) { Text("Label") }
-
-// Go up a level
-RouteLink(path: "..")  { Text("Label") }
-
-// Absolute path
-RouteLink(path: "/person/\(id)/company")  { Text("Label") }
-```
-
 ### TabNavigationView
 ```swift
 TabNavigationView(initialTab: "allMusic") {
