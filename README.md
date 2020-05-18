@@ -5,7 +5,7 @@
 [![Swift Version][swift-image]][swift-url]
 ![Platform Versions][ios-image]
 
-This is an experimental library that implements a deep-link routing API for SwiftDux applications. It's currently in an early proof-of-concept stage. Its goal is focused on the routing of an application with minimal additions to the built-in SwiftUI views.
+This is an experimental library to implement a deep-link routing API for SwiftDux applications. It's currently in an early development stage.
 
 ## Features
 - Deep link style navigation.
