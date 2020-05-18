@@ -23,22 +23,19 @@ public struct TabNavigationView<Content, T>: View where Content: View, T: Lossle
     RouteContents(content: routeContents)
   }
 
-  private func routeContents(routeInfo: RouteInfo, leg: RouteLeg?, route: RouteState) -> some View {
-    let pathParam = self.getPathParam(routeInfo: routeInfo, leg: leg)
+  private func routeContents(currentRoute: CurrentRoute, leg: RouteLeg?, route: RouteState) -> some View {
+    let pathParam = self.getPathParam(currentRoute: currentRoute, leg: leg)
     return Redirect(path: String(pathParam.wrappedValue)) {
       TabView(selection: pathParam) { content }
-        .environment(\.routeInfo, routeInfo.next(with: String(pathParam.wrappedValue)))
+        .environment(\.currentRoute, currentRoute.next(with: String(pathParam.wrappedValue)))
     }
   }
 
-  private func getPathParam(routeInfo: RouteInfo, leg: RouteLeg?) -> Binding<T> {
+  private func getPathParam(currentRoute: CurrentRoute, leg: RouteLeg?) -> Binding<T> {
     let pathParam = leg.flatMap { T($0.component) } ?? initialTab
     return Binding(
       get: { pathParam },
-      set: {
-        guard let absolutePath = String($0).standardizePath(withBasePath: routeInfo.path) else { return }
-        self.dispatch(NavigationAction.navigate(to: absolutePath, in: routeInfo.sceneName))
-      }
+      set: { self.dispatch(currentRoute.navigate(to: String($0))) }
     )
   }
 }

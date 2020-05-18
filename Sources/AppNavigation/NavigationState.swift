@@ -51,9 +51,6 @@ public struct RouteState: StateType {
   /// The last leg of the route.
   public var lastLeg: RouteLeg
 
-  /// The route changes should be animated.
-  public var animate: Bool = false
-
   /// The route changes have completed.
   public var completed: Bool = false
 
@@ -61,13 +58,11 @@ public struct RouteState: StateType {
     path: String = "/",
     legsByPath: [String: RouteLeg] = [:],
     lastLeg: RouteLeg = RouteLeg(parentPath: "/", component: ""),
-    animate: Bool = false,
     completed: Bool = false
   ) {
     self.path = path
     self.legsByPath = legsByPath
     self.lastLeg = lastLeg
-    self.animate = animate
     self.completed = completed
   }
 
@@ -90,9 +85,17 @@ public struct SceneState: StateType {
   /// The current active route.
   public var route: RouteState = RouteState()
 
-  public init(name: String, route: RouteState = RouteState()) {
+  /// The detail route of a scene.
+  public var detailRoute: RouteState = RouteState()
+
+  /// The route changes should be animated.
+  public var animate: Bool = false
+
+  public init(name: String, route: RouteState = RouteState(), detailRoute: RouteState = RouteState(), animate: Bool = false) {
     self.name = name
     self.route = route
+    self.detailRoute = detailRoute
+    self.animate = animate
   }
 }
 

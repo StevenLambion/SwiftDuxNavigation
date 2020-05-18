@@ -9,6 +9,7 @@
     case hidesBarsWhenVerticallyCompact(Bool)
     case hidesBarsWhenKeyboardAppears(Bool)
     case barTintColor(UIColor?)
+    case replaceRoot(Bool)
 
     static var defaultOptions: Set<StackNavigationOption> = Set([
       .swipeGesture(true),
@@ -17,14 +18,8 @@
       .hidesBarsWhenVerticallyCompact(false),
       .hidesBarsWhenKeyboardAppears(false),
       .barTintColor(nil),
+      .replaceRoot(false),
     ])
-  }
-
-  extension View {
-
-    func navigationPreference(_ preference: Set<StackNavigationOption>) -> some View {
-      self.preference(key: StackNavigationPreferenceKey.self, value: preference)
-    }
   }
 
   internal final class StackNavigationPreferenceKey: PreferenceKey {
@@ -37,11 +32,15 @@
 
   extension View {
 
+    internal func stackNavigationPreference(_ preference: Set<StackNavigationOption>) -> some View {
+      self.preference(key: StackNavigationPreferenceKey.self, value: preference)
+    }
+
     /// Navigate back in a stack navigation view using a swipe gesture.
     /// - Parameter enabled: Is enabled
     /// - Returns: The view.
     public func enableSwipeNavigation(_ enabled: Bool) -> some View {
-      self.navigationPreference([.swipeGesture(enabled)])
+      self.stackNavigationPreference([.swipeGesture(enabled)])
     }
 
     /// Hide the navigation bar conditionally.
@@ -52,7 +51,7 @@
     ///   - onKeyboardAppears: When the keyboard appears.
     /// - Returns: The view.
     public func hideNavigationBar(onTap: Bool = false, onSwipe: Bool = false, onVerticallyCompact: Bool = false, onKeyboardAppears: Bool = false) -> some View {
-      self.navigationPreference([
+      self.stackNavigationPreference([
         .hideBarsOnTap(onTap),
         .hideBarsOnSwipe(onSwipe),
         .hidesBarsWhenVerticallyCompact(onVerticallyCompact),
@@ -61,7 +60,11 @@
     }
 
     public func stackNavigationBarTintColor(_ color: UIColor) -> some View {
-      self.navigationPreference([.barTintColor(color)])
+      self.stackNavigationPreference([.barTintColor(color)])
+    }
+
+    public func stackNavigationReplaceRoot(_ enabled: Bool) -> some View {
+      self.stackNavigationPreference([.replaceRoot(enabled)])
     }
   }
 

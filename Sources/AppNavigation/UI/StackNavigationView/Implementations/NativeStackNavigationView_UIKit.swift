@@ -5,10 +5,10 @@
 
   internal struct NativeStackNavigationView<RootView>: UIViewControllerRepresentable
   where RootView: View {
-    @Environment(\.routeInfo) private var routeInfo
+    @Environment(\.currentRoute) private var currentRoute
+    @Environment(\.splitNavigationDisplayModeButton) private var splitNavigationDisplayModeButton
     @MappedDispatch() private var dispatch
 
-    var rootPath: String
     var animate: Bool
     var rootView: RootView
 
@@ -28,15 +28,17 @@
 
     func updateUIViewController(_ uiViewController: UINavigationController, context: Context) {
       context.coordinator.setRootView(rootView: rootView)
-      context.coordinator.rootPath = rootPath
+      context.coordinator.currentRoute = currentRoute
       context.coordinator.animate = animate
+      context.coordinator.splitNavigationDisplayModeButton = splitNavigationDisplayModeButton
     }
 
     func makeCoordinator() -> StackNavigationCoordinator {
       let coordinator = StackNavigationCoordinator(dispatch: dispatch)
       coordinator.setRootView(rootView: rootView)
-      coordinator.rootPath = rootPath
+      coordinator.currentRoute = currentRoute
       coordinator.animate = animate
+      coordinator.splitNavigationDisplayModeButton = splitNavigationDisplayModeButton
       return coordinator
     }
   }

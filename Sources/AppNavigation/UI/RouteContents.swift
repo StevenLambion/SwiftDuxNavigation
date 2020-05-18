@@ -6,14 +6,14 @@ import SwiftUI
 /// This handles any house keeping required to properly manage the route state
 /// within the view layer.
 public struct RouteContents<Content>: ConnectableView where Content: View {
-  @Environment(\.routeInfo) private var routeInfo
+  @Environment(\.currentRoute) private var currentRoute
   @MappedDispatch() private var dispatch
 
-  private var content: (RouteInfo, RouteLeg?, RouteState) -> Content
+  private var content: (CurrentRoute, RouteLeg?, RouteState) -> Content
 
   /// Initiate a new RouteContents.
   /// - Parameter content: The contents of the route.
-  public init(@ViewBuilder content: @escaping (RouteInfo, RouteLeg?, RouteState) -> Content) {
+  public init(@ViewBuilder content: @escaping (CurrentRoute, RouteLeg?, RouteState) -> Content) {
     self.content = content
   }
 
@@ -28,19 +28,20 @@ public struct RouteContents<Content>: ConnectableView where Content: View {
   }
 
   public func map(state: NavigationStateRoot) -> Props? {
-    guard let route = routeInfo.resolve(in: state) else { return nil }
+    guard let route = currentRoute.resolveState(in: state) else { return nil }
     return Props(
       route: route,
-      leg: route.legsByPath[routeInfo.path],
-      shouldComplete: !route.completed && routeInfo.path == route.lastLeg.parentPath
+      leg: route.legsByPath[currentRoute.path],
+      shouldComplete: !route.completed && currentRoute.path == route.lastLeg.parentPath
     )
   }
 
   public func body(props: Props) -> some View {
-    if props.shouldComplete {
-      self.dispatch(NavigationAction.completeRouting(scene: self.routeInfo.sceneName))
-    }
     // Use latest route info in case a parent view changed it during the current SwiftUI update.
-    return content(routeInfo, props.route.legsByPath[routeInfo.path], props.route)
+    return content(currentRoute, props.route.legsByPath[currentRoute.path], props.route).onAppear {
+      if props.shouldComplete {
+        self.dispatch(self.currentRoute.completeNavigation())
+      }
+    }
   }
 }

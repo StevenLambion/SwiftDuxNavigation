@@ -8,17 +8,17 @@ internal struct StackRouteBranchViewModifier: ViewModifier {
   var isDefault: Bool
 
   func body(content: Content) -> some View {
-    RouteContents { routeInfo, leg, route in
-      self.routeContents(content: content, routeInfo: routeInfo, leg: leg, route: route)
+    RouteContents { currentRoute, leg, route in
+      self.routeContents(content: content, currentRoute: currentRoute, leg: leg, route: route)
     }
   }
 
-  private func routeContents(content: Content, routeInfo: RouteInfo, leg: RouteLeg?, route: RouteState) -> some View {
-    let shouldRedirect = isDefault && route.path == routeInfo.path
+  private func routeContents(content: Content, currentRoute: CurrentRoute, leg: RouteLeg?, route: RouteState) -> some View {
+    let shouldRedirect = isDefault && route.path == currentRoute.path
     let isActive = leg?.component == name && !shouldRedirect
     return Redirect(path: name, enabled: shouldRedirect) {
       if isActive {
-        content.environment(\.routeInfo, routeInfo.next(with: name, isBranch: true))
+        content.environment(\.currentRoute, currentRoute.next(with: name, isBranch: true))
       }
     }
   }

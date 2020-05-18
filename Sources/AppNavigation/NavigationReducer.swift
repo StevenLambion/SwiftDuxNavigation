@@ -10,17 +10,20 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
     var state = state
 
     switch action {
-    case .beginRouting(let path, let sceneName, let animate):
+    case .beginRouting(let path, let sceneName, let isDetail, let animate):
       state = updateScene(named: sceneName, in: state) {
-        $0.route = beginRouting(to: path, state: $0.route, animate: animate)
+        $0.animate = animate
+        beginRouting(state: &$0, path: path, isDetail: isDetail)
       }
-    case .beginPop(let path, let perserveBranch, let sceneName, let animate):
+    case .beginPop(let path, let sceneName, let isDetail, let perserveBranch, let animate):
       state = updateScene(named: sceneName, in: state) {
-        $0.route = beginPop(to: path, perserveBranch: perserveBranch, state: $0.route, animate: animate)
+        $0.animate = animate
+        beginPop(state: &$0, path: path, perserveBranch: perserveBranch, isDetail: isDetail)
       }
-    case .completeRouting(let sceneName):
+    case .completeRouting(let sceneName, let isDetail):
       state = updateScene(named: sceneName, in: state) {
-        $0.route = completeRouting(state: $0.route)
+        $0.animate = false
+        completeRouting(state: &$0, isDetail: isDetail)
       }
     case .clearScene(let name):
       state.navigation.sceneByName.removeValue(forKey: name)
@@ -38,32 +41,44 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
     return state
   }
 
-  private func beginRouting(to path: String, state: RouteState, animate: Bool) -> RouteState {
-    guard let resolvedPath = path.standardizePath(withBasePath: state.path) else {
-      return state
+  private func beginRouting(state: inout SceneState, path: String, isDetail: Bool) {
+    let route = isDetail ? state.detailRoute : state.route
+    let url = isDetail ? path.standardizedURL(withBasePath: route.path) : nil
+    if let absolutePath = url?.absoluteString {
+      let route = buildRouteState(state: route, absolutePath: absolutePath)
+      if isDetail {
+        state.detailRoute = route
+      } else {
+        state.route = route
+      }
     }
-    let (segments, lastSegment) = buildRouteSegments(path: resolvedPath)
+  }
+
+  private func buildRouteState(state: RouteState, absolutePath: String) -> RouteState {
+    let (segments, lastSegment) = buildRouteSegments(path: absolutePath)
     return RouteState(
-      path: resolvedPath,
+      path: absolutePath,
       legsByPath: segments,
       lastLeg: lastSegment,
-      animate: animate,
       completed: false
     )
   }
 
-  private func completeRouting(state: RouteState) -> RouteState {
-    var state = state
-    state.completed = true
-    return state
+  private func completeRouting(state: inout SceneState, isDetail: Bool) {
+    if isDetail {
+      state.detailRoute.completed = true
+    } else {
+      state.route.completed = true
+    }
   }
 
-  private func beginPop(to path: String, perserveBranch: Bool, state: RouteState, animate: Bool) -> RouteState {
-    guard let resolvedPath = path.standardizePath(withBasePath: state.path) else {
-      return state
+  private func beginPop(state: inout SceneState, path: String, perserveBranch: Bool, isDetail: Bool) {
+    let route = isDetail ? state.detailRoute : state.route
+    guard let resolvedPath = path.standardizedPath(withBasePath: !isDetail ? state.route.path : state.detailRoute.path) else {
+      return
     }
-    guard let segment = state.legsByPath[resolvedPath] else { return state }
-    return beginRouting(to: perserveBranch ? segment.path : segment.parentPath, state: state, animate: animate)
+    guard let segment = route.legsByPath[resolvedPath] else { return }
+    beginRouting(state: &state, path: perserveBranch ? segment.path : segment.parentPath, isDetail: isDetail)
   }
 
   private func buildRouteSegments(path: String) -> ([String: RouteLeg], RouteLeg) {

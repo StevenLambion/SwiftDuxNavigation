@@ -24,8 +24,9 @@
   }
 
   internal final class StackNavigationCoordinator: NSObject {
-    var rootPath: String = "/"
+    var currentRoute: CurrentRoute = CurrentRoute()
     var animate: Bool = true
+    var splitNavigationDisplayModeButton: UIBarButtonItem? = nil
 
     var rootViewController: UIViewController?
     weak var navigationController: UINavigationController? {
@@ -43,8 +44,15 @@
     }
 
     private var dispatch: ActionDispatcher
-    private var routes: [StackRoute] = []
+    private var routes: StackRouteStorage = StackRouteStorage()
     private var viewControllersByPath: [String: UIViewController] = [:]
+    private var replaceRoot: Bool = false {
+      didSet {
+        if replaceRoot != oldValue {
+          updateNavigation()
+        }
+      }
+    }
 
     private var enableSwipeNavigation: Bool = true {
       didSet {
@@ -76,17 +84,16 @@
       rootViewController.rootView = rootView
     }
 
-    private func updateRoutes(_ newRoutes: [StackRoute]) {
+    private func updateRoutes(_ newRoutes: StackRouteStorage) {
       guard self.routes != newRoutes else { return }
-      let newRoutesByPath = Set(newRoutes.map(\.path))
-      routes.forEach {
+      let newRoutesByPath = Set(newRoutes.all.map(\.path))
+      routes.all.forEach {
         if !newRoutesByPath.contains($0.path) {
           viewControllersByPath.removeValue(forKey: $0.path)
         }
       }
-      newRoutes.forEach {
+      newRoutes.all.forEach {
         if viewControllersByPath[$0.path] == nil {
-          navigationController?.view.addSubview($0.viewController.view)
           viewControllersByPath[$0.path] = $0.viewController
         }
       }
@@ -109,14 +116,21 @@
           self.navigationController?.hidesBarsWhenVerticallyCompact = enabled
         case .barTintColor(let color):
           self.navigationController?.navigationBar.tintColor = color
+        case .replaceRoot(let enabled):
+          self.replaceRoot = enabled
         }
       }
     }
 
     private func updateNavigation() {
       guard let rootViewController = rootViewController else { return }
-      let viewControllers: [UIViewController] =
-        [rootViewController] + routes.compactMap { self.viewControllersByPath[$0.path] }
+      var viewControllers: [UIViewController] = routes.all.compactMap { self.viewControllersByPath[$0.path] }
+
+      if viewControllers.count == 0 || !replaceRoot {
+        viewControllers.insert(rootViewController, at: 0)
+      }
+
+      let animate = viewControllers.count > 1 && self.animate
 
       // This is a hack to get UIHostingController to pre-render before getting pushed on the stack. without it
       // the navigationItem won't be set until after the animation. This might explain NavigationLink's destination
@@ -128,6 +142,13 @@
         navigationController?.setViewControllers(viewControllers, animated: animate)
       } else {
         navigationController?.setViewControllers(viewControllers, animated: animate)
+      }
+      if let splitNavigationDisplayModeButton = splitNavigationDisplayModeButton {
+        rootViewController.navigationItem.leftBarButtonItem = splitNavigationDisplayModeButton
+        rootViewController.navigationItem.leftItemsSupplementBackButton = true
+      } else {
+        rootViewController.navigationItem.leftBarButtonItem = nil
+        rootViewController.navigationItem.leftItemsSupplementBackButton = false
       }
     }
 
@@ -148,18 +169,23 @@
     func navigationController(_ navigationController: UINavigationController, didShow viewController: UIViewController, animated: Bool) {
       guard viewController != rootViewController else {
         if !viewControllersByPath.isEmpty {
-          dispatch(NavigationAction.navigate(to: rootPath, animate: false))
-          dispatch(NavigationAction.completeRouting(scene: "main"))
+          dispatch(currentRoute.navigate(to: currentRoute.path, animate: false))
+          dispatch(currentRoute.completeNavigation())
         }
+        if !routes.detail.isEmpty {
+          dispatch(currentRoute.navigate(to: "/", isDetail: true, animate: false))
+          dispatch(currentRoute.completeNavigation(isDetail: true))
+        }
+        viewControllersByPath = [:]
         return
       }
       guard let vcIndex = viewControllersByPath.firstIndex(where: { key, vc in vc == viewController })
       else { return }
       let path = viewControllersByPath.keys[vcIndex]
-      if let route = routes.last {
+      if let route = routes.all.last {
         if route.path != path {
-          dispatch(NavigationAction.pop(to: path, in: "main", preserveBranch: route.fromBranch, animate: false))
-          dispatch(NavigationAction.completeRouting(scene: "main"))
+          dispatch(currentRoute.pop(to: path, isDetail: !routes.detail.isEmpty, preserveBranch: route.fromBranch, animate: false))
+          dispatch(currentRoute.completeNavigation())
         }
       }
     }

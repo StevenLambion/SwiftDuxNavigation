@@ -5,7 +5,7 @@
 
   /// Create a stack-style navigation.
   public struct StackNavigationView<RootView>: ConnectableView where RootView: View {
-    @Environment(\.routeInfo) private var routeInfo
+    @Environment(\.currentRoute) private var currentRoute
 
     private var rootView: RootView
 
@@ -17,9 +17,6 @@
 
     public struct Props: Equatable {
 
-      /// The root path of the navigation stack.
-      var rootPath: String
-
       /// Should the navigation animate.
       var animate: Bool
 
@@ -30,17 +27,16 @@
     }
 
     public func map(state: NavigationStateRoot) -> Props? {
-      guard let route = routeInfo.resolve(in: state) else { return nil }
+      guard let scene = currentRoute.resolveSceneState(in: state) else { return nil }
+      guard let route = currentRoute.resolveState(in: state) else { return nil }
       return Props(
-        rootPath: routeInfo.path,
-        animate: route.animate,
-        hide: !route.animate && !route.completed && route.lastLeg.path != routeInfo.path
+        animate: scene.animate,
+        hide: !scene.animate && !route.completed && route.lastLeg.path != currentRoute.path
       )
     }
 
     public func body(props: Props) -> some View {
       NativeStackNavigationView(
-        rootPath: props.rootPath,
         animate: props.animate,
         rootView: rootView
       )

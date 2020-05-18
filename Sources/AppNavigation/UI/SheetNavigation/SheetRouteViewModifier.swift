@@ -14,22 +14,22 @@ internal struct SheetRouteViewModifier<Modal>: ViewModifier where Modal: View {
 
   public func body(content: Content) -> some View {
     RouteContents {
-      self.routeContents(content: content, routeInfo: $0, leg: $1, route: $2)
+      self.routeContents(content: content, currentRoute: $0, leg: $1, route: $2)
     }
   }
 
-  private func routeContents(content: Content, routeInfo: RouteInfo, leg: RouteLeg?, route: RouteState) -> some View {
+  private func routeContents(content: Content, currentRoute: CurrentRoute, leg: RouteLeg?, route: RouteState) -> some View {
     let isActive = leg?.component == name
     let binding = Binding(
       get: { isActive },
       set: {
         if !$0 {
-          self.dispatch(NavigationAction.navigate(to: routeInfo.path, in: routeInfo.sceneName, animate: true))
+          self.dispatch(currentRoute.navigate(to: currentRoute.path))
         }
       }
     )
     return content.sheet(isPresented: binding) {
-      self.modal().environment((\.routeInfo), routeInfo.next(with: self.name))
+      self.modal().environment((\.currentRoute), currentRoute.next(with: self.name))
     }
   }
 }

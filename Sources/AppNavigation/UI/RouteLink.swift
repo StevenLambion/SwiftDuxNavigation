@@ -1,12 +1,15 @@
+import Dispatch
 import SwiftDux
 import SwiftUI
 
 /// Button that navigates to  a route.
 public struct RouteLink<Label>: View where Label: View {
-  @Environment(\.routeInfo) private var routeInfo
+  @Environment(\.currentRoute) private var currentRoute
   @MappedDispatch() private var dispatch
 
   private var path: String
+  private var scene: String?
+  private var isDetail: Bool
   private var animate: Bool
   private var label: () -> Label
 
@@ -17,8 +20,11 @@ public struct RouteLink<Label>: View where Label: View {
   ///   - path: The path to navigate to. It may be a relative or absolute path.
   ///   - animate: Animate the navigation.
   ///   - label: The label of the button.
-  public init<T>(path: T, animate: Bool = true, @ViewBuilder label: @escaping () -> Label) where T: LosslessStringConvertible {
+  public init<T>(path: T, scene: String? = nil, isDetail: Bool = false, animate: Bool = true, @ViewBuilder label: @escaping () -> Label)
+  where T: LosslessStringConvertible {
     self.path = String(path)
+    self.scene = scene
+    self.isDetail = isDetail
     self.animate = animate
     self.label = label
   }
@@ -28,7 +34,8 @@ public struct RouteLink<Label>: View where Label: View {
   }
 
   private func navigate() {
-    guard let absolutePath = path.standardizePath(withBasePath: routeInfo.path) else { return }
-    dispatch(NavigationAction.navigate(to: absolutePath, in: routeInfo.sceneName, animate: animate))
+    DispatchQueue.main.async {
+      self.dispatch(self.currentRoute.navigate(to: self.path, inScene: self.scene, isDetail: self.isDetail, animate: self.animate))
+    }
   }
 }

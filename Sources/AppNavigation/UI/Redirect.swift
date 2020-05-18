@@ -6,7 +6,7 @@ import SwiftUI
 /// This is useful if there isn't a proper view for the current route path or the route
 /// becomes invalid for the use case.
 public struct Redirect<Content>: ConnectableView where Content: View {
-  @Environment(\.routeInfo) private var routeInfo
+  @Environment(\.currentRoute) private var currentRoute
   @MappedDispatch() private var dispatch
 
   private var path: String
@@ -37,8 +37,8 @@ public struct Redirect<Content>: ConnectableView where Content: View {
   }
 
   public func map(state: NavigationStateRoot) -> Props? {
-    guard let route = routeInfo.resolve(in: state) else { return nil }
-    return Props(route: route, leg: route.legsByPath[routeInfo.path])
+    guard let route = currentRoute.resolveState(in: state) else { return nil }
+    return Props(route: route, leg: route.legsByPath[currentRoute.path])
   }
 
   public func body(props: Props) -> some View {
@@ -51,9 +51,11 @@ public struct Redirect<Content>: ConnectableView where Content: View {
 
   private func redirect(props: Props) {
     guard self.enabled else { return }
-    guard let absolutePath = self.path.standardizePath(withBasePath: self.routeInfo.path) else { return }
+    guard let absolutePath = self.path.standardizedPath(withBasePath: self.currentRoute.path) else { return }
     if props.route.path != absolutePath && !props.route.path.starts(with: absolutePath) {
-      self.dispatch(NavigationAction.navigate(to: absolutePath, in: self.routeInfo.sceneName, animate: self.animate))
+      DispatchQueue.main.async {
+        self.dispatch(self.currentRoute.navigate(to: absolutePath, animate: self.animate))
+      }
     }
   }
 }

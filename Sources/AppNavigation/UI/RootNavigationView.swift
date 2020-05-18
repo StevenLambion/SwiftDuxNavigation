@@ -18,7 +18,6 @@
       RootNavigationHostingView {
         rootView
       }
-      .background(Color.clear)
       .edgesIgnoringSafeArea(.all)
     }
   }

@@ -8,18 +8,18 @@
 
     var branchView: BranchView
 
-    @State private var childRoutes: [StackRoute] = []
+    @State private var childRoutes: StackRouteStorage = StackRouteStorage()
     @State private var stackNavigationOptions: Set<StackNavigationOption> = Set()
 
     func body(content: Content) -> some View {
-      RouteContents { routeInfo, leg, route in
-        self.routeContents(content: content, routeInfo: routeInfo, leg: leg, route: route)
+      RouteContents { currentRoute, leg, route in
+        self.routeContents(content: content, currentRoute: currentRoute, leg: leg, route: route)
       }
     }
 
-    private func routeContents(content: Content, routeInfo: RouteInfo, leg: RouteLeg?, route: RouteState) -> some View {
+    private func routeContents(content: Content, currentRoute: CurrentRoute, leg: RouteLeg?, route: RouteState) -> some View {
       Group {
-        if leg != nil {
+        if leg != nil || currentRoute.path == route.path {
           content
             .onPreferenceChange(StackRoutePreferenceKey.self) {
               self.childRoutes = $0
@@ -27,20 +27,27 @@
             .onPreferenceChange(StackNavigationPreferenceKey.self) {
               self.stackNavigationOptions = $0
             }
-            .stackRoutePreference([createRoute(from: routeInfo)] + childRoutes)
-            .navigationPreference(stackNavigationOptions)
+            .stackRoutePreference(createRoute(from: currentRoute))
+            .stackNavigationPreference(stackNavigationOptions)
         } else {
           content
         }
       }
     }
 
-    private func createRoute(from routeInfo: RouteInfo) -> StackRoute {
-      StackRoute(
-        path: routeInfo.path,
-        fromBranch: routeInfo.isBranch,
+    private func createRoute(from currentRoute: CurrentRoute) -> StackRouteStorage {
+      var routes = childRoutes
+      let newRoute = StackRoute(
+        path: currentRoute.path,
+        fromBranch: currentRoute.isBranch,
         view: branchView
       )
+      if currentRoute.isDetail {
+        routes.detail.append(newRoute)
+      } else {
+        routes.master.append(newRoute)
+      }
+      return routes
     }
   }
 
