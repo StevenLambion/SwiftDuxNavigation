@@ -140,7 +140,7 @@
         navigationController?.setViewControllers(viewControllers, animated: false)
         navigationController?.setViewControllers(previousViewControllers!, animated: false)
         navigationController?.pushViewController(viewControllers.last!, animated: animate)
-      } else if shouldPerformPop(with: viewControllers) || shouldRefresh(with: viewControllers) {
+      } else {
         navigationController?.setViewControllers(viewControllers, animated: animate)
       }
       if let splitNavigationDisplayModeButton = splitNavigationDisplayModeButton {
@@ -161,21 +161,6 @@
         }
       }
       return true
-    }
-
-    private func shouldPerformPop(with viewControllers: [UIViewController]) -> Bool {
-      guard let currentCount = navigationController?.viewControllers.count else { return false }
-      guard currentCount > 0 && viewControllers.count <= currentCount else { return false }
-      for i in 0..<currentCount {
-        if viewControllers[i] != navigationController?.viewControllers[i] {
-          return true
-        }
-      }
-      return false
-    }
-
-    private func shouldRefresh(with viewControllers: [UIViewController]) -> Bool {
-      navigationController?.viewControllers.first != rootViewController || navigationController?.viewControllers.count ?? 0 < viewControllers.count
     }
   }
 
