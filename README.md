@@ -12,6 +12,12 @@ This is an experimental library to implement a deep-link routing API for SwiftDu
 - Save and restore navigation between sessions by persisting the SwiftDux state.
 - Scene support to create separate routes between windows or UIScenes.
 
+## Things to do
+- Error handling
+- Graceful recovery of invalid routes.
+- Save routing state for tabs.
+- macOS support
+
 ## Views
 - `RootNavigationView` - Initiates the ground work.
     - Shares environment objects across view hierarchies.
@@ -28,11 +34,8 @@ This is an experimental library to implement a deep-link routing API for SwiftDu
 - `View.actionSheetRoute(_:content:)` - Displays an action sheet as a route.
 - `View.alertRoute(_:content:)` - Displays an alert as a route.
 
-## Things to do
-- Error handling
-- Graceful recovery of invalid routes.
-- Save routing state of inactive tabs.
-- macOS support
+## Environment Values
+- `currentRoute` - Get information about the current route relative to the view.
 
 [swift-image]: https://img.shields.io/badge/swift-5.2-orange.svg
 [ios-image]: https://img.shields.io/badge/platforms-iOS%2013%20-222.svg
