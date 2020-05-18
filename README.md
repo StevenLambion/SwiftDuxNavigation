@@ -15,6 +15,7 @@ This is an experimental library that implements a deep-link routing API for Swif
 ## Views
 - `RootNavigationView` - Initiates the ground work.
     - Shares environment objects across view hierarchies.
+- `SplitNavigationView` - Master-detail split navigation.
 - `StackNavigationView` - Stacks routes on top of each other.
   - Use gestures to navigate back or hide the navigation bar.
   - Works with SwiftUI's navigation bar API.
@@ -30,9 +31,8 @@ This is an experimental library that implements a deep-link routing API for Swif
 ## Things to do
 - Error handling
 - Graceful recovery of invalid routes.
-- macOS support
-- SplitView support
 - Save routing state of inactive tabs.
+- macOS support
 
 [swift-image]: https://img.shields.io/badge/swift-5.2-orange.svg
 [ios-image]: https://img.shields.io/badge/platforms-iOS%2013%20-222.svg
@@ -190,4 +190,25 @@ StackNavigationView {
 
 // In a view somewhere else: 
 RouteLink(path: "/people/\(person.id)/companies/\(company.id)")
+```
+
+### SplitNavigationView
+The SplitNavigationView uses UISplitViewController to display a master-detail format. Below is an example of a master-detail notes app. The SplitNavigationView automatically handles the expanded and collapsed display mode as long as an active detail route exists. The root detail route is ignored when in collapsed mode.
+
+```swift
+SplitNavigationView {
+  NoteListContainer()
+}
+.detailRoute {
+  // Optional route when no detail view is displayed
+  PlaceholderNote()
+}
+.detailRoute("notes") { noteId in
+  NoteEditor(noteId)
+}
+.splitNavigationPreferredDisplayMode(.allVisible)
+.splitNavigationShowDisplayModeButton(true)
+
+// Use RouteLink to navigate to a detail route:
+RouteLink("notes/\(noteid)", isDetail: true)
 ```
