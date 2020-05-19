@@ -52,8 +52,8 @@ public struct CurrentRoute {
   /// Standardizes a relative path off the route's path.
   /// - Parameter path: The path to standardize.
   /// - Returns: The standardized path.
-  public func standardizedPath(forPath path: String) -> String? {
-    path.standardizedPath(withBasePath: isDetail ? "/" : self.path)
+  public func standardizedPath(forPath path: String, notRelative: Bool) -> String? {
+    path.standardizedPath(withBasePath: notRelative ? "/" : self.path)
   }
 
   /// Navigate relative to current route.
@@ -63,11 +63,12 @@ public struct CurrentRoute {
   ///   - isDetailOverride: Navigate in the detail route.
   ///   - animate: Animate the anvigation.
   /// - Returns: A navigation action.
-  public func navigate(to path: String, inScene scene: String? = nil, isDetail isDetailOverride: Bool = false, animate: Bool = true)
+  public func navigate(to path: String, inScene scene: String? = nil, isDetail isDetailOverride: Bool? = nil, animate: Bool = true)
     -> Action
   {
-    guard let absolutePath = standardizedPath(forPath: path) else { return EmptyAction() }
-    return NavigationAction.navigate(to: absolutePath, inScene: scene ?? sceneName, isDetail: self.isDetail || isDetailOverride, animate: animate)
+    let isDetailForPath = isDetailOverride ?? self.isDetail
+    guard let absolutePath = standardizedPath(forPath: path, notRelative: isDetailForPath != isDetail) else { return EmptyAction() }
+    return NavigationAction.navigate(to: absolutePath, inScene: scene ?? sceneName, isDetail: isDetailForPath, animate: animate)
   }
 
   /// Pop to a path above the current route if it exists.
@@ -78,14 +79,15 @@ public struct CurrentRoute {
   ///   - preserveBranch: Preserve the branch of the path.
   ///   - animate: Animate the anvigation.
   /// - Returns: A navigation action.
-  public func pop(to path: String, inScene scene: String? = nil, isDetail isDetailOverride: Bool = false, preserveBranch: Bool = false, animate: Bool = true)
+  public func pop(to path: String, inScene scene: String? = nil, isDetail isDetailOverride: Bool? = nil, preserveBranch: Bool = false, animate: Bool = true)
     -> Action
   {
-    guard let absolutePath = standardizedPath(forPath: path) else { return EmptyAction() }
+    let isDetailForPath = isDetailOverride ?? self.isDetail
+    guard let absolutePath = standardizedPath(forPath: path, notRelative: isDetailForPath != isDetail) else { return EmptyAction() }
     return NavigationAction.pop(
       to: absolutePath,
       inScene: scene ?? sceneName,
-      isDetail: self.isDetail || isDetailOverride,
+      isDetail: isDetailForPath,
       preserveBranch: preserveBranch,
       animate: animate
     )
@@ -98,8 +100,8 @@ public struct CurrentRoute {
     return NavigationAction.completeRouting(scene: sceneName, isDetail: isDetail || isDetailOverride)
   }
 
-  public func snapshot(forDetail: Bool = false, withIdentifier identifier: String) -> Action {
-    NavigationAction.snapshot(from: path, inScene: sceneName, isDetail: isDetail, forDetail: forDetail, withIdentifier: identifier)
+  public func snapshot(withIdentifier identifier: String) -> Action {
+    NavigationAction.snapshot(from: path, inScene: sceneName, isDetail: isDetail, forDetail: isDetail, withIdentifier: identifier)
   }
 
   public func restoreSnapshot(forDetail: Bool = false, withIdentifier identifier: String) -> Action {
