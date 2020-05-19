@@ -50,9 +50,9 @@
           }
       )
       if currentRoute.isDetail {
-        routes.detail.append(newRoute)
+        routes.detail.insert(newRoute, at: 0)
       } else {
-        routes.master.append(newRoute)
+        routes.master.insert(newRoute, at: 0)
       }
       return routes
     }

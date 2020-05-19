@@ -39,6 +39,12 @@
         path: currentRoute.path,
         fromBranch: currentRoute.isBranch,
         view: branchView
+          .onPreferenceChange(StackRoutePreferenceKey.self) {
+            self.childRoutes = $0
+          }
+          .onPreferenceChange(StackNavigationPreferenceKey.self) {
+            self.stackNavigationOptions = $0
+          }
       )
       if currentRoute.isDetail {
         routes.detail.append(newRoute)

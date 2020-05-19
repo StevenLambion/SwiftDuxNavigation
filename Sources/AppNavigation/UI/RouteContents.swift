@@ -38,12 +38,11 @@ public struct RouteContents<Content>: ConnectableView where Content: View {
 
   public func body(props: Props) -> some View {
     let leg = props.route.legsByPath[currentRoute.path]
-    // Use latest route info in case a parent view changed it during the current SwiftUI update.
-    return content(currentRoute, leg, props.route)
-      .onAppear {
-        if props.shouldComplete {
-          self.dispatch(self.currentRoute.completeNavigation())
-        }
+    if props.shouldComplete {
+      DispatchQueue.main.async {
+        self.dispatch(self.currentRoute.completeNavigation())
       }
+    }
+    return content(currentRoute, leg, props.route)
   }
 }
