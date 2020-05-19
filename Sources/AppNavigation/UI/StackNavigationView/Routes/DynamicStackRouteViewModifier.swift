@@ -3,11 +3,11 @@
   import SwiftDux
   import SwiftUI
 
-  internal struct DynamicStackRouteViewModifier<T, BranchView>: ViewModifier
-  where T: LosslessStringConvertible & Equatable, BranchView: View {
+  internal struct DynamicStackRouteViewModifier<T, RouteContent>: ViewModifier
+  where T: LosslessStringConvertible & Equatable, RouteContent: View {
     @Environment(\.currentRoute) private var currentRoute
 
-    var branchView: (T) -> BranchView
+    var routeContent: (T) -> RouteContent
 
     @State private var childRoutes: StackRouteStorage = StackRouteStorage()
     @State private var stackNavigationOptions: Set<StackNavigationOption> = Set()
@@ -40,7 +40,7 @@
       let newRoute = StackRoute(
         path: nextRouteInfo.path,
         fromBranch: currentRoute.isBranch,
-        view: branchView(pathParam)
+        view: routeContent(pathParam)
           .environment(\.currentRoute, nextRouteInfo)
           .onPreferenceChange(StackRoutePreferenceKey.self) {
             self.childRoutes = $0
@@ -63,9 +63,9 @@
     /// Add a new stack route that accepts a path parameter.
     /// - Parameter branchView: The view of the route.
     /// - Returns: A view.
-    public func stackRoute<T, V>(@ViewBuilder branchView: @escaping (T) -> V) -> some View
-    where T: LosslessStringConvertible & Equatable, V: View {
-      self.modifier(DynamicStackRouteViewModifier(branchView: branchView))
+    public func stackRoute<T, Content>(@ViewBuilder content: @escaping (T) -> Content) -> some View
+    where T: LosslessStringConvertible & Equatable, Content: View {
+      self.modifier(DynamicStackRouteViewModifier(routeContent: content))
     }
   }
 

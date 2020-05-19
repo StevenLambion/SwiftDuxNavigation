@@ -7,9 +7,9 @@ internal struct ActionSheetRouteViewModifier: ViewModifier {
   @MappedDispatch() private var dispatch
 
   var name: String
-  var actionSheet: () -> ActionSheet
+  var actionSheet: ActionSheet
 
-  init(name: String, actionSheet: @escaping () -> ActionSheet) {
+  init(name: String, actionSheet: ActionSheet) {
     self.name = name
     self.actionSheet = actionSheet
   }
@@ -32,7 +32,7 @@ internal struct ActionSheetRouteViewModifier: ViewModifier {
     )
     return
       content
-      .actionSheet(isPresented: binding, content: self.actionSheet)
+        .actionSheet(isPresented: binding) { actionSheet }
       .environment(\.currentRoute, isActive ? currentRoute.next(with: name) : currentRoute)
   }
 }
@@ -47,7 +47,7 @@ extension View {
   /// - Returns: A view.
   @available(iOS 13.0, tvOS 13.0, watchOS 6.0, *)
   @available(OSX, unavailable)
-  public func actionSheetRoute(_ name: String, @ViewBuilder content: @escaping () -> ActionSheet) -> some View {
-    self.modifier(ActionSheetRouteViewModifier(name: name, actionSheet: content))
+  public func actionSheetRoute(_ name: String, content: () -> ActionSheet) -> some View {
+    self.modifier(ActionSheetRouteViewModifier(name: name, actionSheet: content()))
   }
 }

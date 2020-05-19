@@ -7,9 +7,9 @@ internal struct AlertRouteViewModifier: ViewModifier {
   @MappedDispatch() private var dispatch
 
   var name: String
-  var alert: () -> Alert
+  var alert: Alert
 
-  init(name: String, alert: @escaping () -> Alert) {
+  init(name: String, alert: Alert) {
     self.name = name
     self.alert = alert
   }
@@ -33,7 +33,7 @@ internal struct AlertRouteViewModifier: ViewModifier {
     return
       content
       .environment(\.currentRoute, isActive ? currentRoute.next(with: name) : currentRoute)
-      .alert(isPresented: binding, content: self.alert)
+        .alert(isPresented: binding) { alert }
   }
 }
 
@@ -47,7 +47,7 @@ extension View {
   /// - Returns: A view.
   @available(iOS 13.0, tvOS 13.0, watchOS 6.0, *)
   @available(OSX, unavailable)
-  public func alertRoute(_ name: String, @ViewBuilder content: @escaping () -> Alert) -> some View {
-    self.modifier(AlertRouteViewModifier(name: name, alert: content))
+  public func alertRoute(_ name: String, content: () -> Alert) -> some View {
+    self.modifier(AlertRouteViewModifier(name: name, alert: content()))
   }
 }

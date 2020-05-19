@@ -108,7 +108,7 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
     let bucketKey = state.snapshotKey(forPath: path, isDetail: isDetail)
     var bucket = state.snapshots[bucketKey] ?? [:]
     bucket[identifier] = RouteSnapshot(id: identifier, path: pathToSnapshot, isDetail: forDetail)
-    state.snapshots[path] = bucket
+    state.snapshots[bucketKey] = bucket
   }
 
   private func restoreSnapshot(state: inout SceneState, path: String, isDetail: Bool, identifier: String) {

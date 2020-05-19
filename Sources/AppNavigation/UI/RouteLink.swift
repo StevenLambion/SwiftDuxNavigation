@@ -11,7 +11,7 @@ public struct RouteLink<Label>: View where Label: View {
   private var scene: String?
   private var isDetail: Bool
   private var animate: Bool
-  private var label: () -> Label
+  private var label: Label
 
   // swift-format-ignore: ValidateDocumentationComments
 
@@ -20,22 +20,20 @@ public struct RouteLink<Label>: View where Label: View {
   ///   - path: The path to navigate to. It may be a relative or absolute path.
   ///   - animate: Animate the navigation.
   ///   - label: The label of the button.
-  public init<T>(path: T, scene: String? = nil, isDetail: Bool = false, animate: Bool = true, @ViewBuilder label: @escaping () -> Label)
+  public init<T>(path: T, scene: String? = nil, isDetail: Bool = false, animate: Bool = true, @ViewBuilder label: () -> Label)
   where T: LosslessStringConvertible {
     self.path = String(path)
     self.scene = scene
     self.isDetail = isDetail
     self.animate = animate
-    self.label = label
+    self.label = label()
   }
 
   public var body: some View {
-    Button(action: self.navigate, label: label)
+    Button(action: self.navigate) { label }
   }
 
   private func navigate() {
-    DispatchQueue.main.async {
-      self.dispatch(self.currentRoute.navigate(to: self.path, inScene: self.scene, isDetail: self.isDetail, animate: self.animate))
-    }
+    dispatch(self.currentRoute.navigate(to: self.path, inScene: self.scene, isDetail: self.isDetail, animate: self.animate))
   }
 }

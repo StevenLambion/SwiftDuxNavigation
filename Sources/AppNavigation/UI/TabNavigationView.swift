@@ -25,7 +25,7 @@ public struct TabNavigationView<Content, T>: View where Content: View, T: Lossle
 
   private func routeContents(currentRoute: CurrentRoute, leg: RouteLeg?, route: RouteState, snapshots: [String: RouteSnapshot]) -> some View {
     let pathParam = self.getPathParam(currentRoute: currentRoute, leg: leg, snapshots: snapshots)
-    return Redirect(path: String(pathParam.wrappedValue)) {
+    return Redirect(path: String(pathParam.wrappedValue), enabled: route.path == currentRoute.path) {
       TabView(selection: pathParam) { content }
         .environment(\.currentRoute, currentRoute.next(with: String(pathParam.wrappedValue)))
     }
