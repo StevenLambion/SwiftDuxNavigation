@@ -27,6 +27,14 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
       }
     case .clearScene(let name):
       state.navigation.sceneByName.removeValue(forKey: name)
+    case .setSnapshot(let path, let sceneName, let isDetail, let forDetail, let identifier):
+      state = updateScene(named: sceneName, in: state) {
+        snapshotRoute(state: &$0, path: path, isDetail: isDetail, forDetail: forDetail, identifier: identifier)
+      }
+    case .restoreSnapshot(let path, let sceneName, let isDetail, let identifier):
+      state = updateScene(named: sceneName, in: state) {
+        restoreSnapshot(state: &$0, path: path, isDetail: isDetail, identifier: identifier)
+      }
     }
     return state
   }
@@ -43,7 +51,7 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
 
   private func beginRouting(state: inout SceneState, path: String, isDetail: Bool) {
     let route = isDetail ? state.detailRoute : state.route
-    let url = isDetail ? path.standardizedURL(withBasePath: route.path) : nil
+    let url = path.standardizedURL(withBasePath: route.path)
     if let absolutePath = url?.absoluteString {
       let route = buildRouteState(state: route, absolutePath: absolutePath)
       if isDetail {
@@ -51,6 +59,7 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
       } else {
         state.route = route
       }
+      pruneSnapshots(state: &state)
     }
   }
 
@@ -92,5 +101,29 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
       return segment
     }
     return (segments, lastSegment)
+  }
+
+  private func snapshotRoute(state: inout SceneState, path: String, isDetail: Bool, forDetail: Bool, identifier: String) {
+    let pathToSnapshot = forDetail ? state.detailRoute.path : state.route.path
+    let bucketKey = state.snapshotKey(forPath: path, isDetail: isDetail)
+    var bucket = state.snapshots[bucketKey] ?? [:]
+    bucket[identifier] = RouteSnapshot(id: identifier, path: pathToSnapshot, isDetail: forDetail)
+    state.snapshots[path] = bucket
+  }
+
+  private func restoreSnapshot(state: inout SceneState, path: String, isDetail: Bool, identifier: String) {
+    let bucketKey = state.snapshotKey(forPath: path, isDetail: isDetail)
+    guard let snapshot = state.snapshots[bucketKey]?[identifier] else { return }
+    state.animate = false
+    beginRouting(state: &state, path: snapshot.path, isDetail: snapshot.isDetail)
+  }
+
+  private func pruneSnapshots(state: inout SceneState) {
+    state.snapshots = state.snapshots.filter { key, value in
+      let isDetail = key.starts(with: "#")
+      let path = isDetail ? String(key.dropFirst()) : key
+      let route = isDetail ? state.detailRoute : state.route
+      return route.path == path || route.legsByPath[path] != nil
+    }
   }
 }

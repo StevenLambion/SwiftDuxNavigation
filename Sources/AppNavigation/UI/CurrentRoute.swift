@@ -63,9 +63,11 @@ public struct CurrentRoute {
   ///   - isDetailOverride: Navigate in the detail route.
   ///   - animate: Animate the anvigation.
   /// - Returns: A navigation action.
-  public func navigate(to path: String, inScene scene: String? = nil, isDetail isDetailOverride: Bool = false, animate: Bool = true, cache: Bool = false) -> Action {
+  public func navigate(to path: String, inScene scene: String? = nil, isDetail isDetailOverride: Bool = false, animate: Bool = true)
+    -> Action
+  {
     guard let absolutePath = standardizedPath(forPath: path) else { return EmptyAction() }
-    return NavigationAction.navigate(to: absolutePath, inScene: scene ?? sceneName, isDetail: self.isDetail || isDetailOverride, animate: animate, cache: cache)
+    return NavigationAction.navigate(to: absolutePath, inScene: scene ?? sceneName, isDetail: self.isDetail || isDetailOverride, animate: animate)
   }
 
   /// Pop to a path above the current route if it exists.
@@ -95,11 +97,11 @@ public struct CurrentRoute {
   public func completeNavigation(isDetail isDetailOverride: Bool = false) -> Action {
     return NavigationAction.completeRouting(scene: sceneName, isDetail: isDetail || isDetailOverride)
   }
-  
+
   public func snapshot(forDetail: Bool = false, withIdentifier identifier: String) -> Action {
     NavigationAction.snapshot(from: path, inScene: sceneName, isDetail: isDetail, forDetail: forDetail, withIdentifier: identifier)
   }
-  
+
   public func restoreSnapshot(forDetail: Bool = false, withIdentifier identifier: String) -> Action {
     NavigationAction.restoreSnapshot(from: path, inScene: sceneName, isDetail: isDetail, forDetail: forDetail, withIdentifier: identifier)
   }

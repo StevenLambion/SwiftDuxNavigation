@@ -38,7 +38,8 @@
       let newRoute = StackRoute(
         path: currentRoute.path,
         fromBranch: currentRoute.isBranch,
-        view: branchView
+        view:
+          branchView
           .onPreferenceChange(StackRoutePreferenceKey.self) {
             self.childRoutes = $0
           }

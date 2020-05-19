@@ -16,6 +16,12 @@ public enum NavigationAction: Action {
 
   /// Complete the navigation routing.
   case completeRouting(scene: String, isDetail: Bool)
+
+  /// Set a new snapshot of a route.
+  case setSnapshot(path: String, scene: String, isDetail: Bool, forDetail: Bool, identifier: String)
+
+  /// Restore a snapshot of a route.
+  case restoreSnapshot(path: String, scene: String, isDetail: Bool, identifier: String)
 }
 
 extension NavigationAction {
@@ -35,7 +41,7 @@ extension NavigationAction {
   ) -> Action {
     NavigationAction.beginRouting(path: path, scene: scene, isDetail: isDetail, animate: animate)
   }
-  
+
   /// Navigate to a new path with a URL.
   ///
   /// The URL represents the entire path to a scene's routes. The first path component must be the name of the scene.
@@ -54,11 +60,11 @@ extension NavigationAction {
     guard let sceneName = url.pathComponents.first else { return EmptyAction() }
     var routePath = url.pathComponents.dropFirst().joined(separator: "/")
     let detailRoutePath = url.fragment
-    
+
     if routePath.isEmpty {
       routePath = "/"
     }
-    
+
     return ActionPlan<NavigationStateRoot> { store in
       store.send(navigate(to: routePath, inScene: sceneName, animate: true))
       if let detailRoutePath = detailRoutePath {
@@ -85,5 +91,33 @@ extension NavigationAction {
     animate: Bool = true
   ) -> Action {
     NavigationAction.beginPop(path: path, scene: scene, isDetail: isDetail, preserveBranch: preserveBranch, animate: animate)
+  }
+
+  /// Creates a snapshot.
+  /// - Parameters:
+  ///   - path: <#path description#>
+  ///   - scene: <#scene description#>
+  ///   - isDetail: <#isDetail description#>
+  ///   - forDetail: <#forDetail description#>
+  ///   - identifier: <#identifier description#>
+  /// - Returns: <#description#>
+  public static func snapshot(
+    from path: String,
+    inScene scene: String = SceneState.mainSceneName,
+    isDetail: Bool = false,
+    forDetail: Bool = false,
+    withIdentifier identifier: String
+  ) -> Action {
+    NavigationAction.setSnapshot(path: path, scene: scene, isDetail: isDetail, forDetail: forDetail, identifier: identifier)
+  }
+
+  public static func restoreSnapshot(
+    from path: String,
+    inScene scene: String = SceneState.mainSceneName,
+    isDetail: Bool = false,
+    forDetail: Bool = false,
+    withIdentifier identifier: String
+  ) -> Action {
+    NavigationAction.restoreSnapshot(path: path, scene: scene, isDetail: isDetail, identifier: identifier)
   }
 }

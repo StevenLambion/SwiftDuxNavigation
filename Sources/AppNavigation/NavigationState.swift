@@ -71,6 +71,12 @@ public struct RouteState: StateType {
   }
 }
 
+public struct RouteSnapshot: StateType {
+  public var id: String
+  public var path: String
+  public var isDetail: Bool
+}
+
 /// A scene within an application.
 ///
 /// This could represent a window or UIScene object.
@@ -91,11 +97,23 @@ public struct SceneState: StateType {
   /// The route changes should be animated.
   public var animate: Bool = false
 
+  /// Snapshots of routes. Each bucket is stored by their parent route path.
+  /// The storing route provides an identifier for each RouteState it wants to store.
+  public var snapshots: [String: [String: RouteSnapshot]] = [:]
+
   public init(name: String, route: RouteState = RouteState(), detailRoute: RouteState = RouteState(), animate: Bool = false) {
     self.name = name
     self.route = route
     self.detailRoute = detailRoute
     self.animate = animate
+  }
+
+  func snapshotKey(forPath path: String, isDetail: Bool) -> String {
+    isDetail ? "#\(path)" : path
+  }
+
+  func hasSnapshot(forPath path: String, isDetail: Bool, identifier: String) -> Bool {
+    snapshots[snapshotKey(forPath: path, isDetail: isDetail)]?[identifier] != nil
   }
 }
 
