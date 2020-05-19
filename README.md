@@ -1,38 +1,33 @@
 # SwiftDux Navigation (Experimental)
 
-> Provides deep link routing to SwiftUI applications powered by [SwiftDux](https://github.com/StevenLambion/SwiftDux).
+> Provides deep link routing in SwiftUI applications powered by [SwiftDux](https://github.com/StevenLambion/SwiftDux).
 
 [![Swift Version][swift-image]][swift-url]
 ![Platform Versions][ios-image]
 
-This is an experimental library to implement a deep-link routing API for SwiftDux applications. It's currently in an early development stage.
+SwiftDux Navigation implements deep-link routing for SwiftUI applications. It's currently in an early development stage. The library's goal is to take responsibility of the underlying navigational work of an application, so a developer can put more focus on higher-level needs.
 
 ## Features
-- Deep link style navigation.
-- Save and restore navigation between sessions by persisting the SwiftDux state.
-- Scene support to create separate routes between windows or UIScenes.
-- Master-detail routing support.
+- Route style navigation.
+- Navigate by custom URL app scheme.
+- Save and restore the navigation via `PersistStateMiddleware`.
+- Multi-UIScene support.
+- Master-detail routing.
 
-## Things to do
-- Graceful recovery of invalid routes.
-- Finish macOS support (non-catalyst)
-
-## Views
-- `RootNavigationView` - Initiates the ground work.
-    - Shares environment objects across view hierarchies.
-- `SplitNavigationView` - Master-detail split navigation.
+## Navigation Views
+- `SplitNavigationView`
   - Uses UISplitNavigationController on iOS.
     - Automatically handles the collapse and expand layouts.
     - Show or hide the display mode button.
-- `StackNavigationView` - Stacks routes on top of each other.
+- `StackNavigationView`
   - Uses UINavigationController on iOS.
     - Use gestures to navigate back or hide the navigation bar.
     - Works with SwiftUI's navigation bar API.
-- `TabNavigationView` - Display a tab view of routable branches.
+- `TabNavigationView`
   - Identical API to TabView.
   - Automatically saves and restores tab routes.
-- `Redirect` - Conditionally redirects the route.
-- `RouteContents` - Create custom route views.
+- `Redirect`
+  - Conditionally redirects the route.
 
 ## Modals
 - `View.sheetRoute(_:content:)` - Displays a sheet as a route.
@@ -69,7 +64,7 @@ This is an experimental library to implement a deep-link routing API for SwiftDu
       }.provideStore(store)
     ```
 
-1. Provide the SwiftDux store a second time using the `NavigationStateRoot` protocol. This allows SwiftDuxNavigation's views to access it.
+1. Provide the SwiftDux store a second time using the `NavigationStateRoot` protocol. This allows SwiftDuxNavigation's views access it.
     ```swift
     RootNavigationView {
       RootView()
@@ -83,7 +78,7 @@ This is an experimental library to implement a deep-link routing API for SwiftDu
         rootView: SecondaryView().scene(named: session.persistentIdentifier)
       )
     ```
-    Clean up any unneeded scenes by dispatching `NavigationAction.clearScene(named:)`.
+    Clean up any old scenes by dispatching `NavigationAction.clearScene(named:)`.
     ```swift
     // Inside the AppDelegate
     func application(_ application: UIApplication, didDiscardSceneSessions sceneSessions: Set<UISceneSession>) {
@@ -109,7 +104,7 @@ RouteLink(path: "..")  { Text("Label") }
 // Pass an absolute path.
 RouteLink(path: "/person/\(id)/company")  { Text("Label") }
 
-// Navigate the detail route.
+// Navigate the detail route. (when using the SplitNavigationView)
 RouteLink(path: id, isDetail: true) { Text("Label") }
 ```
 
@@ -155,7 +150,7 @@ dispatch(NavigationAction.navigate(to: "/notes", inScene: "main"))
 dispatch(NavigationAction.navigate(to: "..", inScene: "main"))
 ```
 
-## Route Precedence
+### Route precedence
 The precedence of an active route is based on its position in the view hierarchy. In cases where two or more routes share the same parent route, the higher-level route will be chosen. In the following example, the alert route will take precedence over the stack route when the relevant route is set to "display-alert". Any other value will active the stack route instead.
 ```swift
 List {
@@ -167,13 +162,7 @@ List {
 .alertRoute("display-alert") { Alert(title: Text("Hello world!")) }
 ```
 
-## Examples
-
-### Live Example
-
-[Checkout the SwiftDux Todo Example](https://github.com/StevenLambion/SwiftUI-Todo-Example/tree/swiftdux-navigation).
-
-### StackNavigationView
+## Stack navigation
 Create a new `StackNavigationView` to display the app's navigation as a stack. The `View.stackRoute()` methods create the next item in the stack. Think of them as a UIViewController in a UINavigationController. The view inside the route is a branch, and a route may contain one or more of them. In the example, a new route is created with a single branch that displays the `ItemDetails(id:)` view.
 
 When a user taps the `RouteLink`, it will navigate to the route with the `ItemDetails(id:)`. The id type can be anything that is convertible from a `String` such as an `Int`. The library automatically converts path parameters to match the type required by the route.
@@ -194,7 +183,7 @@ StackNavigationView {
   }
 }
 ```
-#### Static branching
+### Static branching
 To add multiple branches to a route, use the `View.branch(_:isDefault:)` method. This gives the branches a name to specify the active one. Think of it as the `View.tag(_:)` method for a `TabView`. In cases where a branch isn't specified, the application can redirect to a default one.
 
 ```swift
@@ -208,10 +197,12 @@ StackNavigationView {
 }
 
 // In a view: 
-RouteLink(path: "/settings")
+RouteLink(path: "/settings") {
+  Text("Settings")
+}
 ```
 
-#### Dynamic branching
+### Dynamic branching
 Dynamic routes pass their last path component to its branches as a path parameter. In some cases, this may lead to two or more consecutive dynamic routes that form a path made up entirely of path parameters. To resolve this, specify branch names on the dynamic routes.
 
 ```swift
@@ -229,10 +220,12 @@ StackNavigationView {
 }
 
 // In a view somewhere else: 
-RouteLink(path: "/people/\(person.id)/companies/\(company.id)")
+RouteLink(path: "/people/\(person.id)/companies/\(company.id)") {
+  Text(Person.fullname)
+}
 ```
 
-### SplitNavigationView
+## Split navigation
 The SplitNavigationView uses UISplitViewController on iOS to display a master-detail interface. Below is an example of a master-detail notes app. The SplitNavigationView automatically handles the expanding and collapsing of the detail route. The root detail route ("/") is ignored when in collapsed mode to provide a placeholder option.
 
 ```swift
@@ -250,10 +243,14 @@ SplitNavigationView {
 .splitNavigationShowDisplayModeButton(true)
 
 // Use RouteLink to navigate to a detail route:
-RouteLink("notes/\(noteid)", isDetail: true)
+RouteLink(path: "notes/\(note.id)", isDetail: true) {
+  Text(note.name)
+}
 ```
 
-### TabNavigationView
+## Tab navigation
+The `TabNavigationView` presents a navigational tab view. It uses the same `View.tabItem` API of the regular TabView. Underneath the hood, each tab is tied to a specific route by name.
+
 ```swift
 TabNavigationView(initialTab: "allMusic") {
   AllMusicContainer()
@@ -266,4 +263,7 @@ TabNavigationView(initialTab: "allMusic") {
     .tabItem { Text("Playlists") }
     .tag("playlists")
 }
+
+// Programmatically navigate to a tab route:
+currentRoute.navigate(to: "/allMusic")
 ```
