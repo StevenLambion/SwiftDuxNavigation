@@ -15,17 +15,22 @@ This is an experimental library to implement a deep-link routing API for SwiftDu
 
 ## Things to do
 - Graceful recovery of invalid routes.
-- Save routing state for tabs.
 - Finish macOS support (non-catalyst)
 
 ## Views
 - `RootNavigationView` - Initiates the ground work.
     - Shares environment objects across view hierarchies.
 - `SplitNavigationView` - Master-detail split navigation.
+  - Uses UISplitNavigationController on iOS.
+    - Automatically handles the collapse and expand layouts.
+    - Show or hide the display mode button.
 - `StackNavigationView` - Stacks routes on top of each other.
-  - Use gestures to navigate back or hide the navigation bar.
-  - Works with SwiftUI's navigation bar API.
+  - Uses UINavigationController on iOS.
+    - Use gestures to navigate back or hide the navigation bar.
+    - Works with SwiftUI's navigation bar API.
 - `TabNavigationView` - Display a tab view of routable branches.
+  - Identical API to TabView.
+  - Automatically saves and restores tab routes.
 - `Redirect` - Conditionally redirects the route.
 - `RouteContents` - Create custom route views.
 
