@@ -1,4 +1,4 @@
-# SwiftDux Navigation (Experimental)
+# SwiftDux Navigation
 
 > Provides deep link routing in SwiftUI applications powered by [SwiftDux](https://github.com/StevenLambion/SwiftDux).
 
@@ -13,6 +13,7 @@ SwiftDux Navigation implements deep-link routing for SwiftUI applications. It's 
 - Save and restore the navigation via `PersistStateMiddleware`.
 - Multi-UIScene support.
 - Master-detail routing.
+- Automatically passes the store object across the view hierarchies.
 
 ## Navigation Views
 - `SplitNavigationView`
