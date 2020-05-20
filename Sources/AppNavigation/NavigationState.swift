@@ -17,6 +17,7 @@ public struct RouteLeg: StateType {
   /// The index of the leg.
   public var index: Int
 
+  /// The full path of a leg.
   public var path: String {
     component.isEmpty ? parentPath : "\(parentPath)\(component)/"
   }
@@ -47,9 +48,17 @@ public struct RouteState: StateType {
 
   /// All the legs of the route by their parent path.
   public var legsByPath: [String: RouteLeg]
+  
+  /// An ordered list of all the legs' absolute paths.
+  public var orderedLegPaths: [String]
 
   /// The last leg of the route.
-  public var lastLeg: RouteLeg
+  public var lastLeg: RouteLeg {
+    orderedLegPaths.last.flatMap { legsByPath[$0] } ?? RouteLeg()
+  }
+
+  /// The route caches by their path.
+  public var caches: [String: RouteCache]
 
   /// The route changes have completed.
   public var completed: Bool = false
@@ -57,24 +66,35 @@ public struct RouteState: StateType {
   public init(
     path: String = "/",
     legsByPath: [String: RouteLeg] = [:],
-    lastLeg: RouteLeg = RouteLeg(parentPath: "/", component: ""),
+    orderedLegPaths: [String] = [],
+    caches: [String: RouteCache] = [:],
     completed: Bool = false
   ) {
     self.path = path
     self.legsByPath = legsByPath
-    self.lastLeg = lastLeg
+    self.orderedLegPaths = orderedLegPaths
+    self.caches = caches
     self.completed = completed
   }
 
   public enum CodingKeys: String, CodingKey {
-    case path, legsByPath, lastLeg
+    case path, legsByPath, orderedLegPaths, caches
   }
 }
 
-public struct RouteSnapshot: StateType {
-  public var id: String
+/// The policy for clearing the caches.
+public enum RouteCachingPolicy: String, Codable {
+  case forever
+  case whileActive
+  case whileParentActive
+}
+
+/// Cache for a route to save it's child routes.
+public struct RouteCache: StateType {
+  public var policy: RouteCachingPolicy
+  public var parentPath: String
   public var path: String
-  public var isDetail: Bool
+  public var snapshots: [String: String] = [:]
 }
 
 /// A scene within an application.
@@ -97,23 +117,11 @@ public struct SceneState: StateType {
   /// The route changes should be animated.
   public var animate: Bool = false
 
-  /// Snapshots of routes. Each bucket is stored by their parent route path.
-  /// The storing route provides an identifier for each RouteState it wants to store.
-  public var snapshots: [String: [String: RouteSnapshot]] = [:]
-
   public init(name: String, route: RouteState = RouteState(), detailRoute: RouteState = RouteState(), animate: Bool = false) {
     self.name = name
     self.route = route
     self.detailRoute = detailRoute
     self.animate = animate
-  }
-
-  func snapshotKey(forPath path: String, isDetail: Bool) -> String {
-    isDetail ? "#\(path)" : path
-  }
-
-  func hasSnapshot(forPath path: String, isDetail: Bool, identifier: String) -> Bool {
-    snapshots[snapshotKey(forPath: path, isDetail: isDetail)]?[identifier] != nil
   }
 }
 

@@ -17,11 +17,11 @@ public enum NavigationAction: Action {
   /// Complete the navigation routing.
   case completeRouting(scene: String, isDetail: Bool)
 
-  /// Set a new snapshot of a route.
-  case setSnapshot(path: String, scene: String, isDetail: Bool, forDetail: Bool, identifier: String)
+  /// Begin caching a route's children.
+  case beginCaching(path: String, scene: String, isDetail: Bool, policy: RouteCachingPolicy)
 
-  /// Restore a snapshot of a route.
-  case restoreSnapshot(path: String, scene: String, isDetail: Bool, identifier: String)
+  /// Stops caching a route's children.
+  case stopCaching(path: String, scene: String, isDetail: Bool)
 }
 
 extension NavigationAction {
@@ -91,33 +91,5 @@ extension NavigationAction {
     animate: Bool = true
   ) -> Action {
     NavigationAction.beginPop(path: path, scene: scene, isDetail: isDetail, preserveBranch: preserveBranch, animate: animate)
-  }
-
-  /// Creates a snapshot.
-  /// - Parameters:
-  ///   - path: <#path description#>
-  ///   - scene: <#scene description#>
-  ///   - isDetail: <#isDetail description#>
-  ///   - forDetail: <#forDetail description#>
-  ///   - identifier: <#identifier description#>
-  /// - Returns: <#description#>
-  public static func snapshot(
-    from path: String,
-    inScene scene: String = SceneState.mainSceneName,
-    isDetail: Bool = false,
-    forDetail: Bool = false,
-    withIdentifier identifier: String
-  ) -> Action {
-    NavigationAction.setSnapshot(path: path, scene: scene, isDetail: isDetail, forDetail: forDetail, identifier: identifier)
-  }
-
-  public static func restoreSnapshot(
-    from path: String,
-    inScene scene: String = SceneState.mainSceneName,
-    isDetail: Bool = false,
-    forDetail: Bool = false,
-    withIdentifier identifier: String
-  ) -> Action {
-    NavigationAction.restoreSnapshot(path: path, scene: scene, isDetail: isDetail, identifier: identifier)
   }
 }

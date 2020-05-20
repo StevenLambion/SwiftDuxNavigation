@@ -33,7 +33,7 @@ internal struct AlertRouteViewModifier: ViewModifier {
     return
       content
       .environment(\.currentRoute, isActive ? currentRoute.next(with: name) : currentRoute)
-        .alert(isPresented: binding) { alert }
+      .alert(isPresented: binding) { alert }
   }
 }
 

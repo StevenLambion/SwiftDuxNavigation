@@ -49,13 +49,6 @@ public struct CurrentRoute {
     )
   }
 
-  /// Standardizes a relative path off the route's path.
-  /// - Parameter path: The path to standardize.
-  /// - Returns: The standardized path.
-  public func standardizedPath(forPath path: String, notRelative: Bool) -> String? {
-    path.standardizedPath(withBasePath: notRelative ? "/" : self.path)
-  }
-
   /// Navigate relative to current route.
   /// - Parameters:
   ///   - path: The path to navigate to.
@@ -99,13 +92,27 @@ public struct CurrentRoute {
   public func completeNavigation(isDetail isDetailOverride: Bool = false) -> Action {
     return NavigationAction.completeRouting(scene: sceneName, isDetail: isDetail || isDetailOverride)
   }
-
-  public func snapshot(withIdentifier identifier: String) -> Action {
-    NavigationAction.snapshot(from: path, inScene: sceneName, isDetail: isDetail, forDetail: isDetail, withIdentifier: identifier)
+  
+  /// Begin caching the route's children.
+  /// - Parameter policy: The caching policy to use.
+  /// - Returns: The action.
+  public func beginCaching(policy: RouteCachingPolicy = .whileActive) -> Action {
+    NavigationAction.beginCaching(path: path, scene: sceneName, isDetail: isDetail, policy: policy)
   }
 
-  public func restoreSnapshot(forDetail: Bool = false, withIdentifier identifier: String) -> Action {
-    NavigationAction.restoreSnapshot(from: path, inScene: sceneName, isDetail: isDetail, forDetail: forDetail, withIdentifier: identifier)
+  /// Stop caching the route's children.
+  /// - Returns: The action.
+  public func stopCaching() -> Action {
+    NavigationAction.stopCaching(path: path, scene: sceneName, isDetail: isDetail)
+  }
+
+  /// Standardizes a relative path off the route's path.
+  /// - Parameters:
+  ///   - relativePath: The path to standardize.
+  ///   - notRelative: If the path is not related to the current route.
+  /// - Returns: The standardized path.
+  private func standardizedPath(forPath relativePath: String, notRelative: Bool) -> String? {
+    relativePath.standardizedPath(withBasePath: notRelative ? "/" : self.path)
   }
 }
 

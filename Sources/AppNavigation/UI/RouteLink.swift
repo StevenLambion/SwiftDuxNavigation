@@ -9,7 +9,7 @@ public struct RouteLink<Label>: View where Label: View {
 
   private var path: String
   private var scene: String?
-  private var isDetail: Bool
+  private var isDetail: Bool?
   private var animate: Bool
   private var label: Label
 
@@ -20,7 +20,7 @@ public struct RouteLink<Label>: View where Label: View {
   ///   - path: The path to navigate to. It may be a relative or absolute path.
   ///   - animate: Animate the navigation.
   ///   - label: The label of the button.
-  public init<T>(path: T, scene: String? = nil, isDetail: Bool = false, animate: Bool = true, @ViewBuilder label: () -> Label)
+  public init<T>(path: T, scene: String? = nil, isDetail: Bool? = nil, animate: Bool = true, @ViewBuilder label: () -> Label)
   where T: LosslessStringConvertible {
     self.path = String(path)
     self.scene = scene
@@ -34,6 +34,6 @@ public struct RouteLink<Label>: View where Label: View {
   }
 
   private func navigate() {
-    dispatch(self.currentRoute.navigate(to: self.path, inScene: self.scene, isDetail: self.isDetail, animate: self.animate))
+    dispatch(self.currentRoute.navigate(to: self.path, inScene: self.scene, isDetail: self.isDetail != false, animate: self.animate))
   }
 }

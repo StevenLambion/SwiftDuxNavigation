@@ -61,7 +61,7 @@
   extension View {
 
     /// Add a new stack route that accepts a path parameter.
-    /// - Parameter branchView: The view of the route.
+    /// - Parameter content: The view of the route.
     /// - Returns: A view.
     public func stackRoute<T, Content>(@ViewBuilder content: @escaping (T) -> Content) -> some View
     where T: LosslessStringConvertible & Equatable, Content: View {

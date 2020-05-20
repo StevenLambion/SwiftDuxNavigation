@@ -27,7 +27,7 @@
     /// Create a detail route that accepts a parameter.
     /// - Parameters:
     ///   - name: The name of the route.
-    ///   - detailContent: The content of the route.
+    ///   - content: The content of the route.
     /// - Returns: The view.
     public func detailRoute<T, Content>(_ name: String? = nil, @ViewBuilder content: @escaping (T) -> Content) -> some View
     where T: LosslessStringConvertible & Equatable, Content: View {

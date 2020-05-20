@@ -74,6 +74,8 @@
           }.onPreferenceChange(StackNavigationPreferenceKey.self) { [weak self] in
             self?.updateOptions($0)
           }
+          // Don't let parent navigation views use the routes.
+          .stackRoutePreference(StackRouteStorage())
       )
     }
 
@@ -172,7 +174,7 @@
           dispatch(currentRoute.navigate(to: currentRoute.path, animate: false))
           dispatch(currentRoute.completeNavigation())
         }
-        if !routes.detail.isEmpty {
+        if !currentRoute.isDetail && !routes.detail.isEmpty {
           dispatch(currentRoute.navigate(to: "/", isDetail: true, animate: false))
           dispatch(currentRoute.completeNavigation(isDetail: true))
         }

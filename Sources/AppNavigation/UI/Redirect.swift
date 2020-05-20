@@ -32,7 +32,7 @@ public struct Redirect<Content>: ConnectableView where Content: View {
     var leg: RouteLeg?
 
     public static func == (lhs: Props, rhs: Props) -> Bool {
-      lhs.leg == rhs.leg
+      lhs.route.completed == rhs.route.completed && lhs.leg == rhs.leg
     }
   }
 
@@ -49,7 +49,7 @@ public struct Redirect<Content>: ConnectableView where Content: View {
   private func redirect(props: Props) {
     guard self.enabled else { return }
     guard let absolutePath = self.path.standardizedPath(withBasePath: self.currentRoute.path) else { return }
-    if props.route.path != absolutePath && !props.route.path.starts(with: absolutePath) {
+    if props.route.completed && props.route.path != absolutePath && !props.route.path.starts(with: absolutePath) {
       DispatchQueue.main.async {
         self.dispatch(self.currentRoute.navigate(to: absolutePath, animate: self.animate))
       }

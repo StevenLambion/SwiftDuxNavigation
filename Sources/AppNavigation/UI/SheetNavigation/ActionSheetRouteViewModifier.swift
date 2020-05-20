@@ -32,7 +32,7 @@ internal struct ActionSheetRouteViewModifier: ViewModifier {
     )
     return
       content
-        .actionSheet(isPresented: binding) { actionSheet }
+      .actionSheet(isPresented: binding) { actionSheet }
       .environment(\.currentRoute, isActive ? currentRoute.next(with: name) : currentRoute)
   }
 }

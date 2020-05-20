@@ -59,7 +59,7 @@
   extension View {
 
     /// Add a new stack route.
-    /// - Parameter branchView: The view of the route.
+    /// - Parameter content: The view of the route.
     /// - Returns: A view.
     public func stackRoute<Content>(@ViewBuilder content: () -> Content) -> some View where Content: View {
       self.modifier(StackRouteViewModifier(routeContent: content()))
