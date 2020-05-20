@@ -9,16 +9,16 @@ public struct RouteContents<Content>: ConnectableView where Content: View {
   @Environment(\.currentRoute) private var currentRoute
   @MappedDispatch() private var dispatch
 
-  private var content: (CurrentRoute, RouteLeg?, RouteState) -> Content
+  private var content: (RouteInfo) -> Content
 
   /// Initiate a new RouteContents.
   /// - Parameter content: The contents of the route.
-  public init(@ViewBuilder content: @escaping (CurrentRoute, RouteLeg?, RouteState) -> Content) {
+  public init(@ViewBuilder content: @escaping (RouteInfo) -> Content) {
     self.content = content
   }
 
   public struct Props: Equatable {
-    var route: RouteState
+    var route: NavigationState.Route
     var path: String?
     var shouldComplete: Bool
 
@@ -43,6 +43,22 @@ public struct RouteContents<Content>: ConnectableView where Content: View {
         self.dispatch(self.currentRoute.completeNavigation())
       }
     }
-    return content(currentRoute, leg, props.route)
+    return content(
+      RouteInfo(
+        current: currentRoute,
+        path: leg?.path,
+        pathParameter: leg?.component,
+        fullPath: props.route.path,
+        isLastLeg: leg?.path == props.route.path
+      )
+    )
   }
+}
+
+public struct RouteInfo {
+  public var current: CurrentRoute
+  public var path: String?
+  public var pathParameter: String?
+  public var fullPath: String
+  public var isLastLeg: Bool
 }

@@ -5,6 +5,7 @@
 
   internal struct DynamicStackRouteViewModifier<T, RouteContent>: ViewModifier
   where T: LosslessStringConvertible & Equatable, RouteContent: View {
+    @Environment(\.store) private var anyStore
     @Environment(\.currentRoute) private var currentRoute
 
     var routeContent: (T) -> RouteContent
@@ -13,20 +14,18 @@
     @State private var stackNavigationOptions: Set<StackNavigationOption> = Set()
 
     func body(content: Content) -> some View {
-      RouteContents { currentRoute, leg, route in
-        self.routeContents(content: content, currentRoute: currentRoute, leg: leg, route: route)
-      }
+      RouteContents { self.routeContents(content: content, routeInfo: $0) }
     }
 
-    private func routeContents(content: Content, currentRoute: CurrentRoute, leg: RouteLeg?, route: RouteState) -> some View {
-      let pathParam = leg.flatMap { !$0.component.isEmpty ? T($0.component) : nil }
-      let nextRoute = pathParam != nil ? currentRoute.next(with: pathParam!) : nil
+    private func routeContents(content: Content, routeInfo: RouteInfo) -> some View {
+      let pathParameter = routeInfo.pathParameter.flatMap { !$0.isEmpty ? T($0) : nil }
+      let nextRoute = pathParameter != nil ? currentRoute.next(with: pathParameter!) : nil
       return Group {
         if nextRoute != nil {
           content
             .id(nextRoute!.path)
             .environment(\.currentRoute, nextRoute!)
-            .stackRoutePreference(createRoute(pathParam: pathParam!))
+            .stackRoutePreference(createRoute(pathParameter: pathParameter!))
             .stackNavigationPreference(stackNavigationOptions)
         } else {
           content
@@ -34,13 +33,13 @@
       }
     }
 
-    private func createRoute(pathParam: T) -> StackRouteStorage {
+    private func createRoute(pathParameter: T) -> StackRouteStorage {
       var routes = childRoutes
-      let nextRouteInfo = currentRoute.next(with: pathParam)
+      let nextRouteInfo = currentRoute.next(with: pathParameter)
       let newRoute = StackRoute(
         path: nextRouteInfo.path,
         fromBranch: currentRoute.isBranch,
-        view: routeContent(pathParam)
+        view: routeContent(pathParameter)
           .environment(\.currentRoute, nextRouteInfo)
           .onPreferenceChange(StackRoutePreferenceKey.self) {
             self.childRoutes = $0
@@ -48,6 +47,7 @@
           .onPreferenceChange(StackNavigationPreferenceKey.self) {
             self.stackNavigationOptions = $0
           }
+          .provideStore(anyStore)
       )
       if currentRoute.isDetail {
         routes.detail.insert(newRoute, at: 0)

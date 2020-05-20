@@ -15,24 +15,22 @@ internal struct AlertRouteViewModifier: ViewModifier {
   }
 
   public func body(content: Content) -> some View {
-    RouteContents {
-      self.routeContents(content: content, currentRoute: $0, leg: $1, route: $2)
-    }
+    RouteContents { self.routeContents(content: content, routeInfo: $0) }
   }
 
-  private func routeContents(content: Content, currentRoute: CurrentRoute, leg: RouteLeg?, route: RouteState) -> some View {
-    let isActive = leg?.component == name
+  private func routeContents(content: Content, routeInfo: RouteInfo) -> some View {
+    let isActive = routeInfo.pathParameter == name
     let binding = Binding(
       get: { isActive },
       set: {
         if !$0 {
-          self.dispatch(currentRoute.navigate(to: currentRoute.path))
+          self.dispatch(routeInfo.current.navigate(to: routeInfo.current.path))
         }
       }
     )
     return
       content
-      .environment(\.currentRoute, isActive ? currentRoute.next(with: name) : currentRoute)
+      .environment(\.currentRoute, isActive ? routeInfo.current.next(with: name) : routeInfo.current)
       .alert(isPresented: binding) { alert }
   }
 }

@@ -18,7 +18,7 @@ public enum NavigationAction: Action {
   case completeRouting(scene: String, isDetail: Bool)
 
   /// Begin caching a route's children.
-  case beginCaching(path: String, scene: String, isDetail: Bool, policy: RouteCachingPolicy)
+  case beginCaching(path: String, scene: String, isDetail: Bool, policy: NavigationState.RouteCachingPolicy)
 
   /// Stops caching a route's children.
   case stopCaching(path: String, scene: String, isDetail: Bool)
@@ -35,7 +35,7 @@ extension NavigationAction {
   /// - Returns: The navigation action.
   public static func navigate(
     to path: String,
-    inScene scene: String = SceneState.mainSceneName,
+    inScene scene: String = NavigationState.Scene.defaultName,
     isDetail: Bool = false,
     animate: Bool = true
   ) -> Action {
@@ -85,7 +85,7 @@ extension NavigationAction {
   /// - Returns: The navigation action.
   public static func pop(
     to path: String,
-    inScene scene: String = SceneState.mainSceneName,
+    inScene scene: String = NavigationState.Scene.defaultName,
     isDetail: Bool,
     preserveBranch: Bool = false,
     animate: Bool = true
