@@ -1,5 +1,4 @@
 import XCTest
-@testable import SwiftDuxNavigationTests
 
 final class SwiftDuxNavigationTests: XCTestCase {
     func testExample() {
