@@ -146,7 +146,7 @@ List {
   ...
 }
 .stackRoute { id in
-  RecipeEditorContainer(id: id)
+  NoteView(id: id)
 }
 .alertRoute("display-alert") { Alert(title: Text("Hello world!")) }
 ```
@@ -179,9 +179,9 @@ To add multiple branches to a route, use the `View.branch(_:isDefault:)` method.
 StackNavigationView {
   AppSectionList()
     .stackRoute {
-      recipes().branch("company", isDefault: true)
-      shoppingList().branch("contact")
-      settings().branch("settings")
+      CompanyDetails().branch("company", isDefault: true)
+      ContactDetails().branch("contact")
+      Settings().branch("settings")
     }
 }
 
