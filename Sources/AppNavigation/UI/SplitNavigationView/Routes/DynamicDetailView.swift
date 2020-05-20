@@ -12,13 +12,13 @@ internal struct DynamicDetailView<Content, T>: View where Content: View, T: Loss
     RouteContents(content: routeContents)
   }
 
-  private func routeContents(currentRoute: CurrentRoute, leg: RouteLeg?, route: RouteState) -> some View {
-    let pathParam = leg.flatMap { !$0.component.isEmpty ? T($0.component) : nil }
+  private func routeContents(routeInfo: RouteInfo) -> some View {
+    let pathParameter = routeInfo.pathParameter.flatMap { !$0.isEmpty ? T($0) : nil }
     return Group {
-      if pathParam != nil {
-        content(pathParam!)
-          .id("detail@" + leg!.path)
-          .environment(\.currentRoute, currentRoute.next(with: pathParam!))
+      if pathParameter != nil {
+        content(pathParameter!)
+          .id("detail@" + routeInfo.current.path)
+          .environment(\.currentRoute, routeInfo.current.next(with: pathParameter!))
       }
     }
   }

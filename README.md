@@ -1,4 +1,4 @@
-# SwiftDux Navigation (Experimental)
+# SwiftDux Navigation
 
 > Provides deep link routing in SwiftUI applications powered by [SwiftDux](https://github.com/StevenLambion/SwiftDux).
 
@@ -13,6 +13,7 @@ SwiftDux Navigation implements deep-link routing for SwiftUI applications. It's 
 - Save and restore the navigation via `PersistStateMiddleware`.
 - Multi-UIScene support.
 - Master-detail routing.
+- Automatically passes the store object across the view hierarchies.
 
 ## Navigation Views
 - `SplitNavigationView`
@@ -24,15 +25,13 @@ SwiftDux Navigation implements deep-link routing for SwiftUI applications. It's 
     - Use gestures to navigate back or hide the navigation bar.
     - Works with SwiftUI's navigation bar API.
 - `TabNavigationView`
-  - Identical API to TabView.
+  - Similar API to TabView.
   - Automatically saves and restores tab routes.
-- `Redirect`
-  - Conditionally redirects the route.
 
 ## Modals
-- `View.sheetRoute(_:content:)` - Displays a sheet as a route.
-- `View.actionSheetRoute(_:content:)` - Displays an action sheet as a route.
-- `View.alertRoute(_:content:)` - Displays an alert as a route.
+- `View.sheetRoute(_:content:)` - Displays a route as a custom sheet.
+- `View.actionSheetRoute(_:content:)` - Displays a route as an action sheet.
+- `View.alertRoute(_:content:)` - Displays a route as an alert.
 
 ## Environment Values
 - `currentRoute` - Get information about the current route relative to the view.
@@ -57,21 +56,11 @@ SwiftDux Navigation implements deep-link routing for SwiftUI applications. It's 
       Store(state: AppState(), reducer: AppReducer() + NavigationReducer())
     ```
 
-1. Wrap your root view with `RootNavigationView`. Then attach any environment objects outside of it. If the environment objects are not injected outside of this view, they may not propagate to all view hierarchies.
+1. Provide the store to the root of the application.
     ```swift
-      RootNavigationView {
-        RootView()
-      }.provideStore(store)
+      RootView().provideStore(store)
     ```
 
-1. Provide the SwiftDux store a second time using the `NavigationStateRoot` protocol. This allows SwiftDuxNavigation's views access it.
-    ```swift
-    RootNavigationView {
-      RootView()
-    }
-    .provideStore(store)
-    .provideStore(store, as: NavigationStateRoot.self)
-    ```
 1. Optionally, specify the current scene when creating a new window or UIScene. By default, the routing uses a "main" scene to conduct navigation.
     ```swift
       UIHostingController(
@@ -249,19 +238,16 @@ RouteLink(path: "notes/\(note.id)", isDetail: true) {
 ```
 
 ## Tab navigation
-The `TabNavigationView` presents a navigational tab view. It uses the same `View.tabItem` API of the regular TabView. Underneath the hood, each tab is tied to a specific route by name.
+The `TabNavigationView` presents a navigational tab view. It uses `View.tabBranch` to represent each tab.
 
 ```swift
 TabNavigationView(initialTab: "allMusic") {
   AllMusicContainer()
-    .tabItem { Text("All Music") }
-    .tag("allMusic")
+    .tabBranch("allMusic") { Text("All Music") }
   AlbumsContainer()
-    .tabItem { Text("Albums") }
-    .tag("albums")
+    .tabBranch("albums") { Text("Albums") }
   PlaylistsContainer()
-    .tabItem { Text("Playlists") }
-    .tag("playlists")
+    .tabBranch("playlists") { Text("Playlists") }
 }
 
 // Programmatically navigate to a tab route:

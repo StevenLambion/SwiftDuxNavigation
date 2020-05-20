@@ -5,6 +5,7 @@
 
   internal struct NativeSplitNavigationView<MasterContent>: UIViewControllerRepresentable
   where MasterContent: View {
+    @Environment(\.store) private var store
     @Environment(\.splitNavigationOptions) private var splitNavigationOptions
     @Environment(\.detailRoutes) private var detailRoutes
     @Environment(\.currentRoute) private var currentRoute
@@ -29,26 +30,25 @@
     ) {}
 
     func updateUIViewController(_ uiViewController: UISplitViewController, context: Context) {
-      context.coordinator.splitNavigationOptions = splitNavigationOptions
+      context.coordinator.store = store
       context.coordinator.detailRoutes = detailRoutes
-      context.coordinator.activeDetailRoute = activeDetailRoute
       context.coordinator.currentRoute = currentRoute
-      context.coordinator.animate = animate
       context.coordinator.isCollapsed = horizontalSizeClass == .compact
+      context.coordinator.activeDetailRoute = activeDetailRoute
+      context.coordinator.updateOptions(splitNavigationOptions)
       context.coordinator.setMasterContent(masterContent)
     }
 
     func makeCoordinator() -> NativeSplitNavigationViewCoordinator<MasterContent> {
-      let coordinator = NativeSplitNavigationViewCoordinator<MasterContent>()
-      coordinator.splitNavigationOptions = splitNavigationOptions
-      coordinator.detailRoutes = detailRoutes
-      coordinator.activeDetailRoute = activeDetailRoute
-      coordinator.currentRoute = currentRoute
-      coordinator.animate = animate
-      coordinator.isCollapsed = horizontalSizeClass == .compact
-      coordinator.setMasterContent(masterContent)
-
-      return coordinator
+      return NativeSplitNavigationViewCoordinator<MasterContent>(
+        store: store,
+        detailRoutes: detailRoutes,
+        activeDetailRoute: activeDetailRoute,
+        currentRoute: currentRoute,
+        isCollapsed: horizontalSizeClass == .compact,
+        splitNavigationOptions: splitNavigationOptions,
+        masterContent: masterContent
+      )
     }
   }
 

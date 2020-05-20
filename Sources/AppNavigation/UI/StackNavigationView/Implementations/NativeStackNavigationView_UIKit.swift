@@ -34,12 +34,13 @@
     }
 
     func makeCoordinator() -> StackNavigationCoordinator {
-      let coordinator = StackNavigationCoordinator(dispatch: dispatch)
-      coordinator.currentRoute = currentRoute
-      coordinator.animate = animate
-      coordinator.splitNavigationDisplayModeButton = splitNavigationDisplayModeButton
-      coordinator.setRootView(rootView: rootView)
-      return coordinator
+      return StackNavigationCoordinator(
+        dispatch: dispatch,
+        currentRoute: currentRoute,
+        animate: animate,
+        splitNavigationDisplayModeButton: splitNavigationDisplayModeButton,
+        rootView: rootView
+      )
     }
   }
 

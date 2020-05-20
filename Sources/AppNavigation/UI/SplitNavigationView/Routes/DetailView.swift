@@ -12,7 +12,7 @@ internal struct DetailView<Content>: View where Content: View {
     RouteContents(content: routeContents)
   }
 
-  private func routeContents(currentRoute: CurrentRoute, leg: RouteLeg?, route: RouteState) -> some View {
-    content.id("detail@" + currentRoute.path)
+  private func routeContents(routeInfo: RouteInfo) -> some View {
+    content.id("detail@" + routeInfo.current.path)
   }
 }

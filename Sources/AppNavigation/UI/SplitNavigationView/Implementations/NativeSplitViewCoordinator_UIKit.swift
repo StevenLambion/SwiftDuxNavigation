@@ -8,21 +8,14 @@
       didSet { splitViewController?.delegate = self }
     }
 
-    var splitNavigationOptions: Set<SplitNavigationOption> = SplitNavigationOption.defaultOptions {
-      didSet { self.updateOptions(splitNavigationOptions) }
-    }
+    var store: AnyStore
+    var detailRoutes: [String: () -> AnyView]
+    var activeDetailRoute: String?
+    var currentRoute: CurrentRoute
+    var isCollapsed: Bool
 
-    var detailRoutes: [String: () -> AnyView] = [:]
-    var activeDetailRoute: String? = nil
-    var currentRoute: CurrentRoute = CurrentRoute()
-    var animate: Bool = true
-    var isCollapsed: Bool = false {
-      didSet { splitViewContext.isCollapsed = isCollapsed }
-    }
-
-    private var splitViewContext = SplitViewContext()
-    private var masterViewController: SplitViewUIHostingController<AnyView>?
-    private var detailViewController: SplitViewUIHostingController<AnyView>?
+    private var masterViewController: UIViewController?
+    private var detailViewController: UIViewController?
     private var showDisplayModeButton: Bool = true
 
     private var detailContent: (() -> AnyView)? {
@@ -30,12 +23,31 @@
       return detailRoutes[activeDetailRoute]
     }
 
+    init(
+      store: AnyStore,
+      detailRoutes: [String: () -> AnyView],
+      activeDetailRoute: String?,
+      currentRoute: CurrentRoute,
+      isCollapsed: Bool,
+      splitNavigationOptions: Set<SplitNavigationOption>,
+      masterContent: MasterContent
+    ) {
+      self.store = store
+      self.detailRoutes = detailRoutes
+      self.activeDetailRoute = activeDetailRoute
+      self.currentRoute = currentRoute
+      self.isCollapsed = isCollapsed
+      super.init()
+      self.updateOptions(splitNavigationOptions)
+      self.setMasterContent(masterContent)
+    }
+
     func setMasterContent(_ masterContent: MasterContent) {
-      updateMasterNavigationView(masterContent: masterContent)
+      updateMasterContent(masterContent: masterContent)
       var viewControllers: [UIViewController] = [masterViewController!]
 
       if !isCollapsed {
-        updateDetailNavigationView()
+        updateDetailContent()
         viewControllers.append(detailViewController!)
       } else {
         detailViewController = nil
@@ -43,56 +55,7 @@
       self.splitViewController?.viewControllers = viewControllers
     }
 
-    private func updateMasterNavigationView(masterContent: MasterContent) {
-      let detailContent = self.detailContent
-      let masterView = SplitViewContextProvider { context in
-        if context.masterIsReady {
-          StackNavigationView {
-            if context.isCollapsed && detailContent != nil && self.activeDetailRoute != "/" {
-              masterContent.stackRoute {
-                detailContent.map { $0() }
-              }.environment(\.currentRoute, CurrentRoute(path: "/", isDetail: true))
-            } else {
-              masterContent
-            }
-          }
-        }
-      }.environmentObject(splitViewContext)
-
-      if masterViewController == nil {
-        masterViewController = SplitViewUIHostingController(
-          isReady: { [weak self] in self?.splitViewContext.masterIsReady = $0 },
-          rootView: AnyView(masterView)
-        )
-      } else {
-        masterViewController?.rootView = AnyView(masterView)
-      }
-    }
-
-    private func updateDetailNavigationView() {
-      let detailContent = self.detailContent
-      let detailView = SplitViewContextProvider { context in
-        if context.detailIsReady {
-          StackNavigationView {
-            detailContent.map { $0() }.stackNavigationReplaceRoot(true)
-          }
-          .environment((\.currentRoute), CurrentRoute(sceneName: self.currentRoute.sceneName, isDetail: true))
-        }
-      }
-      .environment(\.splitNavigationDisplayModeButton, showDisplayModeButton ? splitViewController?.displayModeButtonItem : nil)
-      .environmentObject(splitViewContext)
-
-      if detailViewController == nil {
-        detailViewController = SplitViewUIHostingController(
-          isReady: { [weak self] in self?.splitViewContext.detailIsReady = $0 },
-          rootView: AnyView(detailView)
-        )
-      } else {
-        detailViewController?.rootView = AnyView(detailView)
-      }
-    }
-
-    private func updateOptions(_ options: Set<SplitNavigationOption>) {
+    func updateOptions(_ options: Set<SplitNavigationOption>) {
       options.forEach { option in
         switch option {
         case .showDisplayModeButton(let enabled):
@@ -111,40 +74,50 @@
       }
     }
 
-    /// Makes sure SwiftUI doesn't render the contents until the controller is in the view heirarchy.
-    private final class SplitViewUIHostingController<RootView>: UIHostingController<RootView> where RootView: View {
-      var isReady: (Bool) -> Void = { _ in }
+    private func updateMasterContent(masterContent: MasterContent) {
+      let detailContent = self.detailContent
+      let masterView = StackNavigationView {
+        if isCollapsed && detailContent != nil && activeDetailRoute != "/" {
+          masterContent.stackRoute {
+            detailContent.map { $0() }
+          }
+          .environment(\.currentRoute, CurrentRoute(path: "/", isDetail: true))
+        } else {
+          masterContent
+        }
+      }.provideStore(self.store)
+      updateMasterViewController(content: masterView)
+    }
 
-      init(isReady: @escaping (Bool) -> Void, rootView: RootView) {
-        self.isReady = isReady
-        super.init(rootView: rootView)
-      }
-
-      @objc required dynamic init?(coder aDecoder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-      }
-
-      override func didMove(toParent parent: UIViewController?) {
-        isReady(parent != nil)
+    private func updateMasterViewController<Content>(content: Content) where Content: View {
+      if let masterViewController = masterViewController as? UIHostingController<Content> {
+        masterViewController.rootView = content
+      } else {
+        masterViewController = UIHostingController(
+          rootView: content
+        )
       }
     }
 
-    private final class SplitViewContext: ObservableObject {
-      @Published var masterIsReady: Bool = false
-      @Published var detailIsReady: Bool = false
-      @Published var isCollapsed: Bool = false
+    private func updateDetailContent() {
+      let detailContent = self.detailContent
+      let detailView = StackNavigationView {
+        detailContent.map { $0() }.stackNavigationReplaceRoot(true)
+      }
+      .environment((\.currentRoute), CurrentRoute(sceneName: self.currentRoute.sceneName, isDetail: true))
+      .environment(\.splitNavigationDisplayModeButton, showDisplayModeButton ? splitViewController?.displayModeButtonItem : nil)
+      .provideStore(self.store)
+
+      updateDetailViewController(content: detailView)
     }
 
-    private struct SplitViewContextProvider<DetailContent>: View where DetailContent: View {
-      @EnvironmentObject private var context: SplitViewContext
-      private var content: (SplitViewContext) -> DetailContent
-
-      init(@ViewBuilder content: @escaping (SplitViewContext) -> DetailContent) {
-        self.content = content
-      }
-
-      var body: some View {
-        content(context)
+    private func updateDetailViewController<Content>(content: Content) where Content: View {
+      if let detailViewController = detailViewController as? UIHostingController<Content> {
+        detailViewController.rootView = content
+      } else {
+        detailViewController = UIHostingController(
+          rootView: content
+        )
       }
     }
   }

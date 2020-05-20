@@ -4,20 +4,19 @@
   import SwiftUI
 
   internal struct StackRouteViewModifier<RouteContent>: ViewModifier where RouteContent: View {
+    @Environment(\.store) private var anyStore
     var routeContent: RouteContent
 
     @State private var childRoutes: StackRouteStorage = StackRouteStorage()
     @State private var stackNavigationOptions: Set<StackNavigationOption> = Set()
 
     func body(content: Content) -> some View {
-      RouteContents { currentRoute, leg, route in
-        self.routeContents(content: content, currentRoute: currentRoute, leg: leg, route: route)
-      }
+      RouteContents { self.routeContents(content: content, routeInfo: $0) }
     }
 
-    private func routeContents(content: Content, currentRoute: CurrentRoute, leg: RouteLeg?, route: RouteState) -> some View {
+    private func routeContents(content: Content, routeInfo: RouteInfo) -> some View {
       Group {
-        if leg != nil || currentRoute.path == route.path {
+        if routeInfo.pathParameter != nil || routeInfo.current.path == routeInfo.fullPath {
           content
             .onPreferenceChange(StackRoutePreferenceKey.self) {
               self.childRoutes = $0
@@ -25,7 +24,7 @@
             .onPreferenceChange(StackNavigationPreferenceKey.self) {
               self.stackNavigationOptions = $0
             }
-            .stackRoutePreference(createRoute(from: currentRoute))
+            .stackRoutePreference(createRoute(from: routeInfo.current))
             .stackNavigationPreference(stackNavigationOptions)
         } else {
           content
@@ -46,6 +45,7 @@
           .onPreferenceChange(StackNavigationPreferenceKey.self) {
             self.stackNavigationOptions = $0
           }
+          .provideStore(anyStore)
       )
       if currentRoute.isDetail {
         routes.detail.append(newRoute)

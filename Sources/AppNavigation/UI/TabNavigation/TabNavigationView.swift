@@ -2,9 +2,8 @@ import SwiftDux
 import SwiftUI
 
 /// A tab view that navigates using  routes.
-///
-/// TODO - Persist tab state
 public struct TabNavigationView<Content, T>: View where Content: View, T: LosslessStringConvertible & Hashable {
+  @Environment(\.store) private var anyStore
   @MappedDispatch() private var dispatch
 
   private var content: Content
@@ -23,19 +22,23 @@ public struct TabNavigationView<Content, T>: View where Content: View, T: Lossle
     RouteContents(content: routeContents)
   }
 
-  private func routeContents(currentRoute: CurrentRoute, leg: RouteLeg?, route: RouteState) -> some View {
-    let pathParam = getPathParam(currentRoute: currentRoute, leg: leg)
-    return Redirect(path: String(pathParam.wrappedValue), enabled: route.path == currentRoute.path) {
-      TabView(selection: pathParam) { content }
-        .environment(\.currentRoute, currentRoute.next(with: String(pathParam.wrappedValue)))
-        .onAppear { self.dispatch(currentRoute.beginCaching()) }
-    }
+  private func routeContents(routeInfo: RouteInfo) -> some View {
+    let pathParameter = createPathParameterBinding(currentRoute: routeInfo.current, pathParameter: routeInfo.pathParameter)
+    let shouldRedirect = routeInfo.fullPath == routeInfo.current.path
+    return TabView(selection: pathParameter) { content.provideStore(anyStore) }
+      .environment(\.currentRoute, routeInfo.current.next(with: String(pathParameter.wrappedValue)))
+      .onAppear {
+        if shouldRedirect {
+          self.dispatch(routeInfo.current.navigate(to: String(pathParameter.wrappedValue), animate: false))
+        }
+        self.dispatch(routeInfo.current.beginCaching())
+      }
   }
 
-  private func getPathParam(currentRoute: CurrentRoute, leg: RouteLeg?) -> Binding<T> {
-    let pathParam = leg.flatMap { T($0.component) } ?? initialTab
+  private func createPathParameterBinding(currentRoute: CurrentRoute, pathParameter: String?) -> Binding<T> {
+    let pathParameter = pathParameter.flatMap { T($0) } ?? initialTab
     return Binding(
-      get: { pathParam },
+      get: { pathParameter },
       set: {
         let nextPathParam = String($0)
         self.dispatch(currentRoute.navigate(to: String(nextPathParam)))

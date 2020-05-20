@@ -5,7 +5,7 @@ import SwiftUI
 public struct CurrentRoute {
 
   /// The scene name.
-  public var sceneName: String = SceneState.mainSceneName
+  public var sceneName: String = NavigationState.Scene.defaultName
 
   /// The active path relative to the view.
   public var path: String = "/"
@@ -18,17 +18,17 @@ public struct CurrentRoute {
     path == "/"
   }
 
-  /// Resolve the `SceneState` relative to the view from the application state.
+  /// Resolve the `Scene` relative to the view from the application state.
   /// - Parameter state: The application state.
-  /// - Returns: The `SceneState`.
-  public func resolveSceneState(in state: NavigationStateRoot) -> SceneState? {
+  /// - Returns: The `Scene`.
+  public func resolveSceneState(in state: NavigationStateRoot) -> NavigationState.Scene? {
     state.navigation.sceneByName[sceneName]
   }
 
-  /// Resolve the `RouteState` relative to the view from the application state.
+  /// Resolve the `Route` relative to the view from the application state.
   /// - Parameter state: The application state.
-  /// - Returns: The `RouteState`.
-  public func resolveState(in state: NavigationStateRoot) -> RouteState? {
+  /// - Returns: The `Route`.
+  public func resolveState(in state: NavigationStateRoot) -> NavigationState.Route? {
     if isDetail {
       return resolveSceneState(in: state)?.detailRoute
     }
@@ -92,11 +92,11 @@ public struct CurrentRoute {
   public func completeNavigation(isDetail isDetailOverride: Bool = false) -> Action {
     return NavigationAction.completeRouting(scene: sceneName, isDetail: isDetail || isDetailOverride)
   }
-  
+
   /// Begin caching the route's children.
   /// - Parameter policy: The caching policy to use.
   /// - Returns: The action.
-  public func beginCaching(policy: RouteCachingPolicy = .whileActive) -> Action {
+  public func beginCaching(policy: NavigationState.RouteCachingPolicy = .whileActive) -> Action {
     NavigationAction.beginCaching(path: path, scene: sceneName, isDetail: isDetail, policy: policy)
   }
 
@@ -117,7 +117,7 @@ public struct CurrentRoute {
 }
 
 public final class CurrentRouteKey: EnvironmentKey {
-  public static var defaultValue = CurrentRoute(sceneName: SceneState.mainSceneName, path: "/")
+  public static var defaultValue = CurrentRoute(sceneName: NavigationState.Scene.defaultName, path: "/")
 }
 
 extension EnvironmentValues {
