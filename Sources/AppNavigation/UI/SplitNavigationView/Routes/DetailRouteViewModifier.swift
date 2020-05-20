@@ -26,10 +26,10 @@
     /// Create a detail route.
     /// - Parameters:
     ///   - name: The name of the route.
-    ///   - detailContent: The content of the route.
+    ///   - content: The content of the route.
     /// - Returns: The view.
-    public func detailRoute<V>(_ name: String? = nil, @ViewBuilder detailContent: @escaping () -> V) -> some View where V: View {
-      self.modifier(DetailRouteViewModifier(name: name, detailContent: detailContent))
+    public func detailRoute<Content>(_ name: String? = nil, @ViewBuilder content: @escaping () -> Content) -> some View where Content: View {
+      self.modifier(DetailRouteViewModifier(name: name, detailContent: content))
     }
   }
 

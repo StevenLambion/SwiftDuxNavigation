@@ -9,39 +9,29 @@ public struct RouteContents<Content>: ConnectableView where Content: View {
   @Environment(\.currentRoute) private var currentRoute
   @MappedDispatch() private var dispatch
 
-  private var content: (CurrentRoute, RouteLeg?, RouteState, [String: RouteSnapshot]) -> Content
-
-  /// Initiate a new RouteContents.
-  /// - Parameter content: The contents of the route.
-  public init(@ViewBuilder content: @escaping (CurrentRoute, RouteLeg?, RouteState, [String: RouteSnapshot]) -> Content) {
-    self.content = content
-  }
+  private var content: (CurrentRoute, RouteLeg?, RouteState) -> Content
 
   /// Initiate a new RouteContents.
   /// - Parameter content: The contents of the route.
   public init(@ViewBuilder content: @escaping (CurrentRoute, RouteLeg?, RouteState) -> Content) {
-    self.content = { currentRoute, leg, state, _ in content(currentRoute, leg, state) }
+    self.content = content
   }
 
   public struct Props: Equatable {
     var route: RouteState
-    var leg: RouteLeg?
-    var snapshots: [String: RouteSnapshot]
+    var path: String?
     var shouldComplete: Bool
 
     public static func == (lhs: Props, rhs: Props) -> Bool {
-      lhs.snapshots == rhs.snapshots && lhs.leg == rhs.leg && lhs.shouldComplete == rhs.shouldComplete
+      lhs.path == rhs.path && lhs.shouldComplete == rhs.shouldComplete
     }
   }
 
   public func map(state: NavigationStateRoot) -> Props? {
-    guard let scene = currentRoute.resolveSceneState(in: state) else { return nil }
     guard let route = currentRoute.resolveState(in: state) else { return nil }
-    let leg = route.legsByPath[currentRoute.path]
     return Props(
       route: route,
-      leg: leg,
-      snapshots: scene.snapshots[currentRoute.path] ?? [:],
+      path: route.legsByPath[currentRoute.path]?.path,
       shouldComplete: !route.completed && currentRoute.path == route.lastLeg.parentPath
     )
   }
@@ -53,6 +43,6 @@ public struct RouteContents<Content>: ConnectableView where Content: View {
         self.dispatch(self.currentRoute.completeNavigation())
       }
     }
-    return content(currentRoute, leg, props.route, props.snapshots)
+    return content(currentRoute, leg, props.route)
   }
 }

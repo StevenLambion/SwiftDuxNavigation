@@ -3,8 +3,8 @@
   import SwiftDux
   import SwiftUI
 
-  internal struct StackRouteViewModifier<BranchView>: ViewModifier where BranchView: View {
-    var branchView: BranchView
+  internal struct StackRouteViewModifier<RouteContent>: ViewModifier where RouteContent: View {
+    var routeContent: RouteContent
 
     @State private var childRoutes: StackRouteStorage = StackRouteStorage()
     @State private var stackNavigationOptions: Set<StackNavigationOption> = Set()
@@ -39,7 +39,7 @@
         path: currentRoute.path,
         fromBranch: currentRoute.isBranch,
         view:
-          branchView
+          routeContent
           .onPreferenceChange(StackRoutePreferenceKey.self) {
             self.childRoutes = $0
           }
@@ -59,10 +59,10 @@
   extension View {
 
     /// Add a new stack route.
-    /// - Parameter branchView: The view of the route.
+    /// - Parameter content: The view of the route.
     /// - Returns: A view.
-    public func stackRoute<V>(@ViewBuilder branchView: () -> V) -> some View where V: View {
-      self.modifier(StackRouteViewModifier(branchView: branchView()))
+    public func stackRoute<Content>(@ViewBuilder content: () -> Content) -> some View where Content: View {
+      self.modifier(StackRouteViewModifier(routeContent: content()))
     }
   }
 

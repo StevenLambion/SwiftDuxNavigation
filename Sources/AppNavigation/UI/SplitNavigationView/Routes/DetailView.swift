@@ -2,10 +2,10 @@ import SwiftDux
 import SwiftUI
 
 internal struct DetailView<Content>: View where Content: View {
-  private var content: () -> Content
+  private var content: Content
 
-  init(@ViewBuilder content: @escaping () -> Content) {
-    self.content = content
+  init(@ViewBuilder content: () -> Content) {
+    self.content = content()
   }
 
   var body: some View {
@@ -13,6 +13,6 @@ internal struct DetailView<Content>: View where Content: View {
   }
 
   private func routeContents(currentRoute: CurrentRoute, leg: RouteLeg?, route: RouteState) -> some View {
-    content().id("detail@" + currentRoute.path)
+    content.id("detail@" + currentRoute.path)
   }
 }

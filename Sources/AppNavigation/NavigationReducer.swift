@@ -11,29 +11,29 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
 
     switch action {
     case .beginRouting(let path, let sceneName, let isDetail, let animate):
-      state = updateScene(named: sceneName, in: state) {
-        $0.animate = animate
-        beginRouting(state: &$0, path: path, isDetail: isDetail)
+      state = updateRoute(forScene: sceneName, isDetail: isDetail, in: state) { route, scene in
+        scene.animate = animate
+        scene.animate = beginRouting(route: &route, path: path)
       }
     case .beginPop(let path, let sceneName, let isDetail, let perserveBranch, let animate):
-      state = updateScene(named: sceneName, in: state) {
-        $0.animate = animate
-        beginPop(state: &$0, path: path, perserveBranch: perserveBranch, isDetail: isDetail)
+      state = updateRoute(forScene: sceneName, isDetail: isDetail, in: state) { route, scene in
+        scene.animate = animate
+        scene.animate = beginPop(route: &route, path: path, perserveBranch: perserveBranch)
       }
     case .completeRouting(let sceneName, let isDetail):
-      state = updateScene(named: sceneName, in: state) {
-        $0.animate = false
-        completeRouting(state: &$0, isDetail: isDetail)
+      state = updateRoute(forScene: sceneName, isDetail: isDetail, in: state) { route, scene in
+        scene.animate = false
+        completeRouting(route: &route)
       }
     case .clearScene(let name):
       state.navigation.sceneByName.removeValue(forKey: name)
-    case .setSnapshot(let path, let sceneName, let isDetail, let forDetail, let identifier):
-      state = updateScene(named: sceneName, in: state) {
-        snapshotRoute(state: &$0, path: path, isDetail: isDetail, forDetail: forDetail, identifier: identifier)
+    case .beginCaching(let path, let sceneName, let isDetail, let policy):
+      state = updateRoute(forScene: sceneName, isDetail: isDetail, in: state) { route, scene in
+        beginCaching(route: &route, path: path, policy: policy)
       }
-    case .restoreSnapshot(let path, let sceneName, let isDetail, let identifier):
-      state = updateScene(named: sceneName, in: state) {
-        restoreSnapshot(state: &$0, path: path, isDetail: isDetail, identifier: identifier)
+    case .stopCaching(let path, let sceneName, let isDetail):
+      state = updateRoute(forScene: sceneName, isDetail: isDetail, in: state) { route, scene in
+        stopCaching(route: &route, path: path)
       }
     }
     return state
@@ -49,81 +49,115 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
     return state
   }
 
-  private func beginRouting(state: inout SceneState, path: String, isDetail: Bool) {
-    let route = isDetail ? state.detailRoute : state.route
-    let url = path.standardizedURL(withBasePath: route.path)
-    if let absolutePath = url?.absoluteString {
-      let route = buildRouteState(state: route, absolutePath: absolutePath)
+  private func updateRoute(forScene sceneName: String, isDetail: Bool, in state: State, updater: (inout RouteState, inout SceneState) -> Void)
+    -> State
+  {
+    updateScene(named: sceneName, in: state) { scene in
+      var route = isDetail ? scene.detailRoute : scene.route
+      updater(&route, &scene)
       if isDetail {
-        state.detailRoute = route
+        scene.detailRoute = route
       } else {
-        state.route = route
+        scene.route = route
       }
-      pruneSnapshots(state: &state)
     }
   }
 
-  private func buildRouteState(state: RouteState, absolutePath: String) -> RouteState {
-    let (segments, lastSegment) = buildRouteSegments(path: absolutePath)
-    return RouteState(
-      path: absolutePath,
+  private func beginRouting(route: inout RouteState, path: String) -> Bool {
+    let url = path.standardizedURL(withBasePath: route.path)
+    guard let absolutePath = url?.absoluteString else { return false }
+    let resolvedPath = pathFromCache(route: route, path: absolutePath) ?? absolutePath
+    let (segments, orderedLegPaths) = buildRouteSegments(path: resolvedPath)
+    route = RouteState(
+      path: resolvedPath,
       legsByPath: segments,
-      lastLeg: lastSegment,
+      orderedLegPaths: orderedLegPaths,
+      caches: route.caches,
       completed: false
+    )
+    updateCache(route: &route)
+    return absolutePath == resolvedPath
+  }
+
+  private func buildRouteState(route: RouteState, absolutePath: String) -> RouteState {
+    let resolvedPath = pathFromCache(route: route, path: absolutePath) ?? absolutePath
+    let (segments, orderedLegPaths) = buildRouteSegments(path: resolvedPath)
+    var nextRoute = RouteState(
+      path: resolvedPath,
+      legsByPath: segments,
+      orderedLegPaths: orderedLegPaths,
+      caches: route.caches,
+      completed: false
+    )
+    updateCache(route: &nextRoute)
+    return nextRoute
+  }
+
+  private func buildRouteSegments(path: String) -> ([String: RouteLeg], [String]) {
+    let pathComponents = path.split(separator: "/", omittingEmptySubsequences: false)
+    var legs = [String: RouteLeg](minimumCapacity: pathComponents.count)
+    var orderedLegPaths = [String]()
+    var nextLeg = RouteLeg()
+    for component in pathComponents.dropFirst().dropLast() {
+      nextLeg = nextLeg.append(component: String(component))
+      legs[nextLeg.parentPath] = nextLeg
+      orderedLegPaths.append(nextLeg.parentPath)
+    }
+    orderedLegPaths.append(nextLeg.path)
+    return (legs, orderedLegPaths)
+  }
+
+  private func completeRouting(route: inout RouteState) {
+    route.completed = true
+  }
+
+  private func beginPop(route: inout RouteState, path: String, perserveBranch: Bool) -> Bool {
+    guard let resolvedPath = path.standardizedPath(withBasePath: route.path) else {
+      return false
+    }
+    guard let segment = route.legsByPath[resolvedPath] else { return false }
+    return beginRouting(route: &route, path: perserveBranch ? segment.path : segment.parentPath)
+  }
+
+  private func beginCaching(route: inout RouteState, path: String, policy: RouteCachingPolicy) {
+    guard route.caches[path] == nil else { return }
+    guard let pathIndex = route.orderedLegPaths.lastIndex(of: path) else { return }
+    let parentPath = route.orderedLegPaths[max(pathIndex - 1, 0)]
+    route.caches[path] = RouteCache(
+      policy: policy,
+      parentPath: parentPath,
+      path: path
     )
   }
 
-  private func completeRouting(state: inout SceneState, isDetail: Bool) {
-    if isDetail {
-      state.detailRoute.completed = true
-    } else {
-      state.route.completed = true
+  private func stopCaching(route: inout RouteState, path: String) {
+    route.caches.removeValue(forKey: path)
+  }
+
+  private func updateCache(route: inout RouteState) {
+    var caches = route.caches
+    if let cachePath = route.orderedLegPaths.last(where: { caches[$0] != nil }) {
+      if let component = route.legsByPath[cachePath]?.component {
+        caches[cachePath]?.snapshots[component] = route.path
+      }
+    }
+
+    route.caches = caches.filter { key, cache in
+      switch cache.policy {
+      case .whileActive:
+        return route.path == cache.path || route.legsByPath[cache.path] != nil
+      case .whileParentActive:
+        return route.path == cache.parentPath || route.legsByPath[cache.parentPath] != nil
+      default:
+        return true
+      }
     }
   }
 
-  private func beginPop(state: inout SceneState, path: String, perserveBranch: Bool, isDetail: Bool) {
-    let route = isDetail ? state.detailRoute : state.route
-    guard let resolvedPath = path.standardizedPath(withBasePath: !isDetail ? state.route.path : state.detailRoute.path) else {
-      return
-    }
-    guard let segment = route.legsByPath[resolvedPath] else { return }
-    beginRouting(state: &state, path: perserveBranch ? segment.path : segment.parentPath, isDetail: isDetail)
-  }
-
-  private func buildRouteSegments(path: String) -> ([String: RouteLeg], RouteLeg) {
-    let pathComponents = path.split(separator: "/", omittingEmptySubsequences: false)
-    var segments = [String: RouteLeg](minimumCapacity: pathComponents.count)
-    let lastSegment = pathComponents.dropFirst().dropLast().reduce(RouteLeg()) {
-      previousSegment,
-      component in
-      let segment = previousSegment.append(component: String(component))
-      segments[segment.parentPath] = segment
-      return segment
-    }
-    return (segments, lastSegment)
-  }
-
-  private func snapshotRoute(state: inout SceneState, path: String, isDetail: Bool, forDetail: Bool, identifier: String) {
-    let pathToSnapshot = forDetail ? state.detailRoute.path : state.route.path
-    let bucketKey = state.snapshotKey(forPath: path, isDetail: isDetail)
-    var bucket = state.snapshots[bucketKey] ?? [:]
-    bucket[identifier] = RouteSnapshot(id: identifier, path: pathToSnapshot, isDetail: forDetail)
-    state.snapshots[path] = bucket
-  }
-
-  private func restoreSnapshot(state: inout SceneState, path: String, isDetail: Bool, identifier: String) {
-    let bucketKey = state.snapshotKey(forPath: path, isDetail: isDetail)
-    guard let snapshot = state.snapshots[bucketKey]?[identifier] else { return }
-    state.animate = false
-    beginRouting(state: &state, path: snapshot.path, isDetail: snapshot.isDetail)
-  }
-
-  private func pruneSnapshots(state: inout SceneState) {
-    state.snapshots = state.snapshots.filter { key, value in
-      let isDetail = key.starts(with: "#")
-      let path = isDetail ? String(key.dropFirst()) : key
-      let route = isDetail ? state.detailRoute : state.route
-      return route.path == path || route.legsByPath[path] != nil
-    }
+  private func pathFromCache(route: RouteState, path: String) -> String? {
+    guard !route.path.starts(with: path) else { return path }
+    let components = path.components(separatedBy: "/").filter { !$0.isEmpty }
+    let parentPath = components.dropLast().joined(separator: "/").standardizedPath() ?? "/"
+    return components.last.flatMap { route.caches[parentPath]?.snapshots[$0] }
   }
 }

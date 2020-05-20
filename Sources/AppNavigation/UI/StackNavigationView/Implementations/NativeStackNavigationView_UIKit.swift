@@ -27,18 +27,18 @@
     ) {}
 
     func updateUIViewController(_ uiViewController: UINavigationController, context: Context) {
-      context.coordinator.setRootView(rootView: rootView)
       context.coordinator.currentRoute = currentRoute
       context.coordinator.animate = animate
       context.coordinator.splitNavigationDisplayModeButton = splitNavigationDisplayModeButton
+      context.coordinator.setRootView(rootView: rootView)
     }
 
     func makeCoordinator() -> StackNavigationCoordinator {
       let coordinator = StackNavigationCoordinator(dispatch: dispatch)
-      coordinator.setRootView(rootView: rootView)
       coordinator.currentRoute = currentRoute
       coordinator.animate = animate
       coordinator.splitNavigationDisplayModeButton = splitNavigationDisplayModeButton
+      coordinator.setRootView(rootView: rootView)
       return coordinator
     }
   }

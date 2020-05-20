@@ -49,13 +49,6 @@ public struct CurrentRoute {
     )
   }
 
-  /// Standardizes a relative path off the route's path.
-  /// - Parameter path: The path to standardize.
-  /// - Returns: The standardized path.
-  public func standardizedPath(forPath path: String) -> String? {
-    path.standardizedPath(withBasePath: isDetail ? "/" : self.path)
-  }
-
   /// Navigate relative to current route.
   /// - Parameters:
   ///   - path: The path to navigate to.
@@ -63,11 +56,12 @@ public struct CurrentRoute {
   ///   - isDetailOverride: Navigate in the detail route.
   ///   - animate: Animate the anvigation.
   /// - Returns: A navigation action.
-  public func navigate(to path: String, inScene scene: String? = nil, isDetail isDetailOverride: Bool = false, animate: Bool = true)
+  public func navigate(to path: String, inScene scene: String? = nil, isDetail isDetailOverride: Bool? = nil, animate: Bool = true)
     -> Action
   {
-    guard let absolutePath = standardizedPath(forPath: path) else { return EmptyAction() }
-    return NavigationAction.navigate(to: absolutePath, inScene: scene ?? sceneName, isDetail: self.isDetail || isDetailOverride, animate: animate)
+    let isDetailForPath = isDetailOverride ?? self.isDetail
+    guard let absolutePath = standardizedPath(forPath: path, notRelative: isDetailForPath != isDetail) else { return EmptyAction() }
+    return NavigationAction.navigate(to: absolutePath, inScene: scene ?? sceneName, isDetail: isDetailForPath, animate: animate)
   }
 
   /// Pop to a path above the current route if it exists.
@@ -78,14 +72,15 @@ public struct CurrentRoute {
   ///   - preserveBranch: Preserve the branch of the path.
   ///   - animate: Animate the anvigation.
   /// - Returns: A navigation action.
-  public func pop(to path: String, inScene scene: String? = nil, isDetail isDetailOverride: Bool = false, preserveBranch: Bool = false, animate: Bool = true)
+  public func pop(to path: String, inScene scene: String? = nil, isDetail isDetailOverride: Bool? = nil, preserveBranch: Bool = false, animate: Bool = true)
     -> Action
   {
-    guard let absolutePath = standardizedPath(forPath: path) else { return EmptyAction() }
+    let isDetailForPath = isDetailOverride ?? self.isDetail
+    guard let absolutePath = standardizedPath(forPath: path, notRelative: isDetailForPath != isDetail) else { return EmptyAction() }
     return NavigationAction.pop(
       to: absolutePath,
       inScene: scene ?? sceneName,
-      isDetail: self.isDetail || isDetailOverride,
+      isDetail: isDetailForPath,
       preserveBranch: preserveBranch,
       animate: animate
     )
@@ -97,13 +92,27 @@ public struct CurrentRoute {
   public func completeNavigation(isDetail isDetailOverride: Bool = false) -> Action {
     return NavigationAction.completeRouting(scene: sceneName, isDetail: isDetail || isDetailOverride)
   }
-
-  public func snapshot(forDetail: Bool = false, withIdentifier identifier: String) -> Action {
-    NavigationAction.snapshot(from: path, inScene: sceneName, isDetail: isDetail, forDetail: forDetail, withIdentifier: identifier)
+  
+  /// Begin caching the route's children.
+  /// - Parameter policy: The caching policy to use.
+  /// - Returns: The action.
+  public func beginCaching(policy: RouteCachingPolicy = .whileActive) -> Action {
+    NavigationAction.beginCaching(path: path, scene: sceneName, isDetail: isDetail, policy: policy)
   }
 
-  public func restoreSnapshot(forDetail: Bool = false, withIdentifier identifier: String) -> Action {
-    NavigationAction.restoreSnapshot(from: path, inScene: sceneName, isDetail: isDetail, forDetail: forDetail, withIdentifier: identifier)
+  /// Stop caching the route's children.
+  /// - Returns: The action.
+  public func stopCaching() -> Action {
+    NavigationAction.stopCaching(path: path, scene: sceneName, isDetail: isDetail)
+  }
+
+  /// Standardizes a relative path off the route's path.
+  /// - Parameters:
+  ///   - relativePath: The path to standardize.
+  ///   - notRelative: If the path is not related to the current route.
+  /// - Returns: The standardized path.
+  private func standardizedPath(forPath relativePath: String, notRelative: Bool) -> String? {
+    relativePath.standardizedPath(withBasePath: notRelative ? "/" : self.path)
   }
 }
 

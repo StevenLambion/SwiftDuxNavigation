@@ -23,30 +23,23 @@ public struct TabNavigationView<Content, T>: View where Content: View, T: Lossle
     RouteContents(content: routeContents)
   }
 
-  private func routeContents(currentRoute: CurrentRoute, leg: RouteLeg?, route: RouteState, snapshots: [String: RouteSnapshot]) -> some View {
-    let pathParam = self.getPathParam(currentRoute: currentRoute, leg: leg, snapshots: snapshots)
-    return Redirect(path: String(pathParam.wrappedValue)) {
+  private func routeContents(currentRoute: CurrentRoute, leg: RouteLeg?, route: RouteState) -> some View {
+    let pathParam = getPathParam(currentRoute: currentRoute, leg: leg)
+    return Redirect(path: String(pathParam.wrappedValue), enabled: route.path == currentRoute.path) {
       TabView(selection: pathParam) { content }
         .environment(\.currentRoute, currentRoute.next(with: String(pathParam.wrappedValue)))
+        .onAppear { self.dispatch(currentRoute.beginCaching()) }
     }
   }
 
-  private func getPathParam(currentRoute: CurrentRoute, leg: RouteLeg?, snapshots: [String: RouteSnapshot]) -> Binding<T> {
+  private func getPathParam(currentRoute: CurrentRoute, leg: RouteLeg?) -> Binding<T> {
     let pathParam = leg.flatMap { T($0.component) } ?? initialTab
     return Binding(
       get: { pathParam },
       set: {
         let nextPathParam = String($0)
-        self.dispatch(
-          ActionPlan<NavigationStateRoot> { store in
-            store.send(currentRoute.snapshot(withIdentifier: String(pathParam)))
-            if snapshots[nextPathParam] != nil {
-              store.send(currentRoute.restoreSnapshot(withIdentifier: nextPathParam))
-            } else {
-              store.send(currentRoute.navigate(to: String(nextPathParam)))
-            }
-          }
-        )
+        self.dispatch(currentRoute.navigate(to: String(nextPathParam)))
+        self.dispatch(currentRoute.completeNavigation())
       }
     )
   }
