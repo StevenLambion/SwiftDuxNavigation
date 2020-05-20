@@ -17,7 +17,7 @@ internal struct DynamicDetailView<Content, T>: View where Content: View, T: Loss
     return Group {
       if pathParameter != nil {
         content(pathParameter!)
-          .id("detail@" + routeInfo.current.path)
+          .id("detail@" + (routeInfo.path ?? routeInfo.current.path))
           .environment(\.currentRoute, routeInfo.current.next(with: pathParameter!))
       }
     }

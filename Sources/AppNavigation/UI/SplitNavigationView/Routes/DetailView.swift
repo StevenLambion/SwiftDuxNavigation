@@ -13,6 +13,6 @@ internal struct DetailView<Content>: View where Content: View {
   }
 
   private func routeContents(routeInfo: RouteInfo) -> some View {
-    content.id("detail@" + routeInfo.current.path)
+    content.id("detail@" + (routeInfo.path ?? routeInfo.current.path))
   }
 }
