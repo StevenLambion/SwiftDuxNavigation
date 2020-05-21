@@ -14,8 +14,7 @@
       var detailRoutes = self.detailRoutes
       detailRoutes[name ?? "/"] = {
         AnyView(
-          DynamicDetailView(content: self.detailContent)
-            .environment(\.currentRoute, CurrentRoute(path: "/\(self.name ?? "")/", isDetail: true))
+          DynamicDetailView(content: self.detailContent).resetRoute(with: "/\(self.name ?? "")/", isDetail: true)
         )
       }
       return content.environment(\.detailRoutes, detailRoutes)
@@ -25,6 +24,7 @@
   extension View {
 
     /// Create a detail route that accepts a parameter.
+    /// 
     /// - Parameters:
     ///   - name: The name of the route.
     ///   - content: The content of the route.

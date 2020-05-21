@@ -34,15 +34,10 @@ SwiftDux Navigation implements deep-link routing for SwiftUI applications. It's 
 - `View.alertRoute(_:content:)` - Displays a route as an alert.
 
 ## Environment Values
-- `currentRoute` - Get information about the current route relative to the view.
-
-[swift-image]: https://img.shields.io/badge/swift-5.2-orange.svg
-[ios-image]: https://img.shields.io/badge/platforms-iOS%2013%20-222.svg
-[swift-url]: https://swift.org/
-[license-image]: https://img.shields.io/badge/License-MIT-blue.svg
-[license-url]: LICENSE
+- `waypoint` - Get information about the current waypoint relative to the view.
 
 ## Getting started
+
 
 1. Add navigation support to the application state by adhering to the `NavigationStateRoot` protocol.
     ```swift
@@ -76,8 +71,17 @@ SwiftDux Navigation implements deep-link routing for SwiftUI applications. It's 
       }
     }
     ```
+## Terminology
 
-## Navigating the application
+* __Routes__ are navigational paths within the application. 
+* __Waypoints__ are the individual destination within a route's path.
+* __Leg__ - The individual segments of a route that connect the waypoints together.
+
+<div style="text-align:center">
+  <img src="Images/terminology.png" width="900"/>
+</div>
+
+### Navigating the application
 
 ### RouteLink
 This is similar to a SwiftUI NavigationLink, and can be used just like one. It navigates to a new route relative to the containing view when the user taps it.
@@ -102,20 +106,20 @@ CurrentRoute is an environment value that provides information about the current
 
 ```swift
 @MappedDispatch() private var dispatch
-Environment(\.currentRoute) private var currentRoute
+Environment(\.waypoint) private var waypoint
 
 // Pass a single path parameter or component.
 let id = 123
-dispatch(currentRoute.navigate(to: id))
+dispatch(waypoint.navigate(to: id))
 
 // Go up a level.
-dispatch(currentRoute.navigate(to: ".."))
+dispatch(waypoint.navigate(to: ".."))
 
 // Pass an absolute path.
-dispatch(currentRoute.navigate(to: "/person/\(id)/company"))
+dispatch(waypoint.navigate(to: "/person/\(id)/company"))
 
 // Navigate the detail route.
-dispatch(currentRoute.navigate(to: id, isDetail: true) { Text("Label") }
+dispatch(waypoint.navigate(to: id, isDetail: true) { Text("Label") }
 ```
 
 ### NavigationAction
@@ -251,5 +255,11 @@ TabNavigationView(initialTab: "allMusic") {
 }
 
 // Programmatically navigate to a tab route:
-currentRoute.navigate(to: "/allMusic")
+waypoint.navigate(to: "/allMusic")
 ```
+
+[swift-image]: https://img.shields.io/badge/swift-5.2-orange.svg
+[ios-image]: https://img.shields.io/badge/platforms-iOS%2013%20-222.svg
+[swift-url]: https://swift.org/
+[license-image]: https://img.shields.io/badge/License-MIT-blue.svg
+[license-url]: LICENSE

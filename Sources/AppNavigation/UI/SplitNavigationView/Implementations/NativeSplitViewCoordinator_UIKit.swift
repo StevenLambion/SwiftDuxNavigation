@@ -11,7 +11,7 @@
     var store: AnyStore
     var detailRoutes: [String: () -> AnyView]
     var activeDetailRoute: String?
-    var currentRoute: CurrentRoute
+    var waypoint: Waypoint
     var isCollapsed: Bool
 
     private var masterViewController: UIViewController?
@@ -27,7 +27,7 @@
       store: AnyStore,
       detailRoutes: [String: () -> AnyView],
       activeDetailRoute: String?,
-      currentRoute: CurrentRoute,
+      waypoint: Waypoint,
       isCollapsed: Bool,
       splitNavigationOptions: Set<SplitNavigationOption>,
       masterContent: MasterContent
@@ -35,7 +35,7 @@
       self.store = store
       self.detailRoutes = detailRoutes
       self.activeDetailRoute = activeDetailRoute
-      self.currentRoute = currentRoute
+      self.waypoint = waypoint
       self.isCollapsed = isCollapsed
       super.init()
       self.updateOptions(splitNavigationOptions)
@@ -44,15 +44,10 @@
 
     func setMasterContent(_ masterContent: MasterContent) {
       updateMasterContent(masterContent: masterContent)
-      var viewControllers: [UIViewController] = [masterViewController!]
-
-      if !isCollapsed {
-        updateDetailContent()
-        viewControllers.append(detailViewController!)
-      } else {
-        detailViewController = nil
+      updateDetailContent()
+      if self.splitViewController?.viewControllers.count == 0 {
+        self.splitViewController?.viewControllers = [masterViewController!, detailViewController!]
       }
-      self.splitViewController?.viewControllers = viewControllers
     }
 
     func updateOptions(_ options: Set<SplitNavigationOption>) {
@@ -75,17 +70,21 @@
     }
 
     private func updateMasterContent(masterContent: MasterContent) {
+      let id = waypoint.path + "@split-navigation-master"
       let detailContent = self.detailContent
       let masterView = StackNavigationView {
         if isCollapsed && detailContent != nil && activeDetailRoute != "/" {
           masterContent.stackRoute {
             detailContent.map { $0() }
           }
-          .environment(\.currentRoute, CurrentRoute(path: "/", isDetail: true))
+          .resetRoute(with: "/", isDetail: true)
         } else {
           masterContent
         }
-      }.provideStore(self.store)
+      }
+      .id(id)
+      .provideStore(self.store)
+      
       updateMasterViewController(content: masterView)
     }
 
@@ -100,11 +99,13 @@
     }
 
     private func updateDetailContent() {
-      let detailContent = self.detailContent
+      let id = waypoint.path + "@split-navigation-detail"
+      let detailContent = !isCollapsed ? self.detailContent : nil
       let detailView = StackNavigationView {
         detailContent.map { $0() }.stackNavigationReplaceRoot(true)
       }
-      .environment((\.currentRoute), CurrentRoute(sceneName: self.currentRoute.sceneName, isDetail: true))
+      .id(id)
+      .environment((\.waypoint), Waypoint(sceneName: self.waypoint.sceneName, isDetail: true))
       .environment(\.splitNavigationDisplayModeButton, showDisplayModeButton ? splitViewController?.displayModeButtonItem : nil)
       .provideStore(self.store)
 

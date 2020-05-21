@@ -8,7 +8,7 @@
     @Environment(\.store) private var store
     @Environment(\.splitNavigationOptions) private var splitNavigationOptions
     @Environment(\.detailRoutes) private var detailRoutes
-    @Environment(\.currentRoute) private var currentRoute
+    @Environment(\.waypoint) private var waypoint
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var activeDetailRoute: String?
@@ -32,7 +32,7 @@
     func updateUIViewController(_ uiViewController: UISplitViewController, context: Context) {
       context.coordinator.store = store
       context.coordinator.detailRoutes = detailRoutes
-      context.coordinator.currentRoute = currentRoute
+      context.coordinator.waypoint = waypoint
       context.coordinator.isCollapsed = horizontalSizeClass == .compact
       context.coordinator.activeDetailRoute = activeDetailRoute
       context.coordinator.updateOptions(splitNavigationOptions)
@@ -44,7 +44,7 @@
         store: store,
         detailRoutes: detailRoutes,
         activeDetailRoute: activeDetailRoute,
-        currentRoute: currentRoute,
+        waypoint: waypoint,
         isCollapsed: horizontalSizeClass == .compact,
         splitNavigationOptions: splitNavigationOptions,
         masterContent: masterContent

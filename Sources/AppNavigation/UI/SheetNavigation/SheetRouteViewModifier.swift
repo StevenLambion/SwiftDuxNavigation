@@ -1,7 +1,7 @@
 import SwiftDux
 import SwiftUI
 
-internal struct SheetRouteViewModifier<Modal>: ViewModifier where Modal: View {
+internal struct SheetRouteViewModifier<Modal>: RouteReaderViewModifier where Modal: View {
   @MappedDispatch() private var dispatch
 
   var name: String
@@ -12,22 +12,18 @@ internal struct SheetRouteViewModifier<Modal>: ViewModifier where Modal: View {
     self.modal = modal
   }
 
-  public func body(content: Content) -> some View {
-    RouteContents { self.routeContents(content: content, routeInfo: $0) }
-  }
-
-  private func routeContents(content: Content, routeInfo: RouteInfo) -> some View {
+  public func body(content: Content, routeInfo: RouteInfo) -> some View {
     let isActive = routeInfo.pathParameter == name
     let binding = Binding(
       get: { isActive },
       set: {
         if !$0 {
-          self.dispatch(routeInfo.current.navigate(to: routeInfo.current.path))
+          self.dispatch(routeInfo.waypoint.navigate(to: routeInfo.waypoint.path))
         }
       }
     )
     return content.sheet(isPresented: binding) {
-      self.modal().environment((\.currentRoute), routeInfo.current.next(with: self.name))
+      self.modal().environment((\.waypoint), routeInfo.waypoint.next(with: self.name))
     }
   }
 }
@@ -35,6 +31,7 @@ internal struct SheetRouteViewModifier<Modal>: ViewModifier where Modal: View {
 extension View {
 
   /// Create  a route that displays a modal sheet.
+  /// 
   /// - Parameters:
   ///   - name: The name of the route
   ///   - content: A view to display as a sheet.

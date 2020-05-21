@@ -1,27 +1,22 @@
 import SwiftDux
 import SwiftUI
 
-internal struct StackRouteBranchViewModifier: ViewModifier {
+internal struct StackRouteBranchViewModifier: RouteReaderViewModifier {
   @Environment(\.store) private var anyStore
   @MappedDispatch() private var dispatch
 
   var name: String
   var isDefault: Bool = false
 
-  func body(content: Content) -> some View {
-    RouteContents { self.routeContents(content: content, routeInfo: $0) }
-  }
-
-  private func routeContents(content: Content, routeInfo: RouteInfo) -> some View {
+  public func body(content: Content, routeInfo: RouteInfo) -> some View {
     let isActive = routeInfo.pathParameter == name
-    let shouldRedirect = !isActive && isDefault && routeInfo.fullPath == routeInfo.current.path
-    let nextRoute = routeInfo.current.next(with: name, isBranch: true)
+    let shouldRedirect = !isActive && isDefault && routeInfo.path == routeInfo.waypoint.path
     if shouldRedirect {
-      dispatch(routeInfo.current.navigate(to: name, animate: false))
+      dispatch(routeInfo.waypoint.navigate(to: name, animate: false))
     }
     return Group {
       if isActive {
-        content.provideStore(anyStore).id(nextRoute.path).environment(\.currentRoute, nextRoute)
+        content.provideStore(anyStore).id(routeInfo.waypoint.path + routeInfo.pathParameter!).nextWaypoint(with: name, isBranch: true)
       }
     }
   }

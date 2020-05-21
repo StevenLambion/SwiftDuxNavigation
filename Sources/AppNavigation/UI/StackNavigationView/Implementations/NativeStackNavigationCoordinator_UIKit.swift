@@ -3,16 +3,6 @@
   import SwiftDux
   import SwiftUI
 
-  class Test<RootView>: UIHostingController<RootView> where RootView: View {
-    override var navigationItem: UINavigationItem {
-      return super.navigationItem
-    }
-
-    override func viewWillLayoutSubviews() {
-      super.viewWillLayoutSubviews()
-    }
-  }
-
   internal struct StackRoute: Equatable {
     var path: String
     var fromBranch: Bool = false
@@ -25,7 +15,10 @@
     }
 
     init<V>(path: String, fromBranch: Bool = false, view: V) where V: View {
-      self.init(path: path, fromBranch: fromBranch, viewController: Test(rootView: view))
+      self.init(
+        path: path,
+        fromBranch: fromBranch,
+        viewController: UIHostingController(rootView: view))
     }
 
     static func == (lhs: StackRoute, rhs: StackRoute) -> Bool {
@@ -34,7 +27,7 @@
   }
 
   internal final class StackNavigationCoordinator: NSObject {
-    var currentRoute: CurrentRoute
+    var waypoint: Waypoint
     var animate: Bool
     var splitNavigationDisplayModeButton: UIBarButtonItem?
 
@@ -72,13 +65,13 @@
 
     init<Content>(
       dispatch: ActionDispatcher,
-      currentRoute: CurrentRoute,
+      waypoint: Waypoint,
       animate: Bool,
       splitNavigationDisplayModeButton: UIBarButtonItem?,
       rootView: Content
     ) where Content: View {
       self.dispatch = dispatch
-      self.currentRoute = currentRoute
+      self.waypoint = waypoint
       self.animate = animate
       self.splitNavigationDisplayModeButton = splitNavigationDisplayModeButton
       super.init()
@@ -154,17 +147,11 @@
       }
 
       let animate = viewControllers.count > 1 && self.animate
-
-      // This is a hack to get UIHostingController to pre-render before getting pushed on the stack. without it
-      // the navigationItem won't be set until after the animation. This might explain NavigationLink's destination
-      // behavior.
-      if shouldPerformPush(with: viewControllers) {
-        let nextViewController = viewControllers.last!
+      if let nextViewController = viewControllers.last {
         prerenderViewController(viewController: nextViewController)
-        navigationController?.pushViewController(nextViewController, animated: animate)
-      } else {
-        navigationController?.setViewControllers(viewControllers, animated: animate)
       }
+      navigationController?.setViewControllers(viewControllers, animated: animate)
+      
       if let splitNavigationDisplayModeButton = splitNavigationDisplayModeButton {
         rootViewController.navigationItem.leftBarButtonItem = splitNavigationDisplayModeButton
         rootViewController.navigationItem.leftItemsSupplementBackButton = true
@@ -188,14 +175,21 @@
     /// Pre-render a SwiftUI hosted view, so the navigation item is ready.
     ///
     /// SwiftUI is built on top of UIViews which use CALayer. CALayer cannot layout or render until they are in a graphics context.
-    /// One way to handle this is to add the SwiftUI hosted view to a view controller that's already attached to a window.
+    /// One way to handle this is to add the SwiftUI hosted view to a view controller that's already attached to a window. The render method
+    /// of UIHostingView crashes if it's called
     /// - Parameter viewController: The view controller.
     private func prerenderViewController(viewController: UIViewController) {
-      navigationController?.addChild(viewController)
-      navigationController?.view.addSubview(viewController.view)
-      viewController.view.layer.layoutSublayers()
-      viewController.view.removeFromSuperview()
-      viewController.removeFromParent()
+      guard viewController.navigationController == nil else { return }
+      guard viewController.splitViewController == nil else { return }
+      if viewController.parent == nil {
+        navigationController?.addChild(viewController)
+        navigationController?.view.addSubview(viewController.view)
+        viewController.view.layoutIfNeeded()
+        viewController.view.removeFromSuperview()
+        viewController.removeFromParent()
+      } else {
+        viewController.view.layoutIfNeeded()
+      }
     }
   }
 
@@ -208,12 +202,12 @@
     func navigationController(_ navigationController: UINavigationController, didShow viewController: UIViewController, animated: Bool) {
       guard viewController != rootViewController else {
         if !viewControllersByPath.isEmpty {
-          dispatch(currentRoute.navigate(to: currentRoute.path, animate: false))
-          dispatch(currentRoute.completeNavigation())
+          dispatch(waypoint.navigate(to: waypoint.path, animate: false))
+          dispatch(waypoint.completeNavigation())
         }
-        if !currentRoute.isDetail && !routes.detail.isEmpty {
-          dispatch(currentRoute.navigate(to: "/", isDetail: true, animate: false))
-          dispatch(currentRoute.completeNavigation(isDetail: true))
+        if !waypoint.isDetail && !routes.detail.isEmpty {
+          dispatch(waypoint.navigate(to: "/", isDetail: true, animate: false))
+          dispatch(waypoint.completeNavigation(isDetail: true))
         }
         viewControllersByPath = [:]
         return
@@ -223,8 +217,8 @@
       let path = viewControllersByPath.keys[vcIndex]
       if let route = routes.all.last {
         if route.path != path {
-          dispatch(currentRoute.pop(to: path, isDetail: !routes.detail.isEmpty, preserveBranch: route.fromBranch, animate: false))
-          dispatch(currentRoute.completeNavigation())
+          dispatch(waypoint.pop(to: path, isDetail: !routes.detail.isEmpty, preserveBranch: route.fromBranch, animate: false))
+          dispatch(waypoint.completeNavigation())
         }
       }
     }
