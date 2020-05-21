@@ -8,7 +8,7 @@
 SwiftDux Navigation implements deep-link routing for SwiftUI applications. It's currently in an early development stage.
 
 ## Purpose
-The purpose of this library is to provide a stateful, deep-link navigational system for an application. In the same way that SwiftUI views represent the application's current state, it does the same for the navigation. The library handles this by utilizing a single navigational state object. This state is updated through a reducer function. The changes from the navigational state are then propagated throughout the SwiftUI view hierarchy.
+The purpose of this library is to provide a stateful, deep-link navigational system for an application. In the same way that SwiftUI views represent the application's current state, it does the same for navigation. The library handles this by utilizing a single navigational state object. This state is updated through a reducer function. The changes from the navigational state are then propagated throughout the SwiftUI view hierarchy.
 
 It also provide a small set of primitive navigational views out-of-the-box, but it should not be seen as a UI library. To reduce opinionated UI decisions, it intentionally leaves out platform-specific functionality that may require extra intervention to implement. For example, displaying a right chevron in a navigable list on iOS. Rather than adding extra logic to the `RouteLink` view, it's better for the app developer to implement it the way they see fit. In terms of extensibility, the library should provide everything needed to create new navigational views that it may lack.
 
