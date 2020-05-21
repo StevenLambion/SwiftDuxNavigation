@@ -42,6 +42,7 @@
     }
 
     /// Show the display mode button.
+    ///
     /// - Parameter enabled: show the button.
     /// - Returns: The view.
     public func splitNavigationShowDisplayModeButton(_ enabled: Bool) -> some View {
@@ -49,6 +50,7 @@
     }
 
     /// Set the preferred display mode.
+    ///
     /// - Parameter displayMode: The display mode.
     /// - Returns: The view.
     public func splitNavigationPreferredDisplayMode(_ displayMode: UISplitViewController.DisplayMode) -> some View {
@@ -56,6 +58,7 @@
     }
 
     /// Present the primary panel with a swipe gesture.
+    ///
     /// - Parameter enabled: Enable the gesture.
     /// - Returns: The view.
     public func splitNavigationPresentsWithGesture(_ enabled: Bool) -> some View {
@@ -65,6 +68,7 @@
     // swift-format-ignore: ValidateDocumentationComments
 
     /// Set the preferred column width fraction of the primary panel
+    ///
     /// - Parameter value: The column width fraction.
     /// - Returns: The view.
     public func splitNavigationPreferredPrimaryColumnWidthFraction(_ value: CGFloat) -> some View {
@@ -72,6 +76,7 @@
     }
 
     /// Set the edge location of the primary panel.
+    ///
     /// - Parameter value: The edge to display the panel.
     /// - Returns: The view.
     public func splitNavigationPrimaryEdge(_ value: UISplitViewController.PrimaryEdge) -> some View {
@@ -79,6 +84,7 @@
     }
 
     /// Set background style of the primary panel.
+    /// 
     /// - Parameter value: The background style.
     /// - Returns: The view.
     public func splitNavigationPrimaryBackgroundStyle(_ value: UISplitViewController.BackgroundStyle) -> some View {

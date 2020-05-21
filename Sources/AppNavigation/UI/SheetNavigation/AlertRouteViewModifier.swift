@@ -3,7 +3,7 @@ import SwiftUI
 
 @available(iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 @available(OSX, unavailable)
-internal struct AlertRouteViewModifier: ViewModifier {
+internal struct AlertRouteViewModifier: RouteReaderViewModifier {
   @MappedDispatch() private var dispatch
 
   var name: String
@@ -14,24 +14,20 @@ internal struct AlertRouteViewModifier: ViewModifier {
     self.alert = alert
   }
 
-  public func body(content: Content) -> some View {
-    RouteContents { self.routeContents(content: content, routeInfo: $0) }
-  }
-
-  private func routeContents(content: Content, routeInfo: RouteInfo) -> some View {
+  public func body(content: Content, routeInfo: RouteInfo) -> some View {
     let isActive = routeInfo.pathParameter == name
     let binding = Binding(
       get: { isActive },
       set: {
         if !$0 {
-          self.dispatch(routeInfo.current.navigate(to: routeInfo.current.path))
+          self.dispatch(routeInfo.waypoint.navigate(to: routeInfo.waypoint.path))
         }
       }
     )
     return
       content
-      .environment(\.currentRoute, isActive ? routeInfo.current.next(with: name) : routeInfo.current)
-      .alert(isPresented: binding) { alert }
+        .nextWaypoint(with: isActive ? name : nil)
+        .alert(isPresented: binding) { alert }
   }
 }
 

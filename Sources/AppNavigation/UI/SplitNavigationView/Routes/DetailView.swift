@@ -9,10 +9,8 @@ internal struct DetailView<Content>: View where Content: View {
   }
 
   var body: some View {
-    RouteContents(content: routeContents)
-  }
-
-  private func routeContents(routeInfo: RouteInfo) -> some View {
-    content.id("detail@" + (routeInfo.path ?? routeInfo.current.path))
+    RouteReader { _ in
+      self.content
+    }
   }
 }

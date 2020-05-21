@@ -37,6 +37,7 @@
     }
 
     /// Navigate back in a stack navigation view using a swipe gesture.
+    ///
     /// - Parameter enabled: Is enabled
     /// - Returns: The view.
     public func enableSwipeNavigation(_ enabled: Bool) -> some View {
@@ -44,6 +45,7 @@
     }
 
     /// Hide the navigation bar conditionally.
+    /// 
     /// - Parameters:
     ///   - onTap: When the user taps the view.
     ///   - onSwipe: When the user swipes in the view.
@@ -58,11 +60,20 @@
         .hidesBarsWhenKeyboardAppears(onKeyboardAppears),
       ])
     }
-
+    
+    /// Set the tint color of the navigation bar.
+    ///
+    /// - Parameter color: The tint color.
+    /// - Returns: The view.
     public func stackNavigationBarTintColor(_ color: UIColor) -> some View {
       self.stackNavigationPreference([.barTintColor(color)])
     }
-
+    
+    /// Replace the root view of the StackNavigationView with the first child stack route.
+    ///
+    /// This is useful if the root view is used as a placeholder.
+    /// - Parameter enabled: enable to replace the root view.
+    /// - Returns: The view.
     public func stackNavigationReplaceRoot(_ enabled: Bool) -> some View {
       self.stackNavigationPreference([.replaceRoot(enabled)])
     }

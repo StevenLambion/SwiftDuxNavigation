@@ -5,7 +5,7 @@
 
   internal struct NativeStackNavigationView<RootView>: UIViewControllerRepresentable
   where RootView: View {
-    @Environment(\.currentRoute) private var currentRoute
+    @Environment(\.waypoint) private var waypoint
     @Environment(\.splitNavigationDisplayModeButton) private var splitNavigationDisplayModeButton
     @MappedDispatch() private var dispatch
 
@@ -27,7 +27,7 @@
     ) {}
 
     func updateUIViewController(_ uiViewController: UINavigationController, context: Context) {
-      context.coordinator.currentRoute = currentRoute
+      context.coordinator.waypoint = waypoint
       context.coordinator.animate = animate
       context.coordinator.splitNavigationDisplayModeButton = splitNavigationDisplayModeButton
       context.coordinator.setRootView(rootView: rootView)
@@ -36,7 +36,7 @@
     func makeCoordinator() -> StackNavigationCoordinator {
       return StackNavigationCoordinator(
         dispatch: dispatch,
-        currentRoute: currentRoute,
+        waypoint: waypoint,
         animate: animate,
         splitNavigationDisplayModeButton: splitNavigationDisplayModeButton,
         rootView: rootView

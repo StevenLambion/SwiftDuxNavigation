@@ -5,7 +5,7 @@
 
   /// Create a stack-style navigation.
   public struct StackNavigationView<RootView>: ConnectableView where RootView: View {
-    @Environment(\.currentRoute) private var currentRoute
+    @Environment(\.waypoint) private var waypoint
 
     private var rootView: RootView
 
@@ -27,11 +27,11 @@
     }
 
     public func map(state: NavigationStateRoot) -> Props? {
-      guard let scene = currentRoute.resolveSceneState(in: state) else { return nil }
-      guard let route = currentRoute.resolveState(in: state) else { return nil }
+      guard let scene = waypoint.resolveSceneState(in: state) else { return nil }
+      guard let route = waypoint.resolveState(in: state) else { return nil }
       return Props(
         animate: scene.animate,
-        hide: !scene.animate && !route.completed && route.lastLeg.path != currentRoute.path
+        hide: !scene.animate && !route.completed && route.lastLeg.path != waypoint.path
       )
     }
 

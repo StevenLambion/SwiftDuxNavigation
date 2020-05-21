@@ -3,7 +3,7 @@ import SwiftUI
 
 @available(iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 @available(OSX, unavailable)
-internal struct ActionSheetRouteViewModifier: ViewModifier {
+internal struct ActionSheetRouteViewModifier: RouteReaderViewModifier {
   @Environment(\.store) var anyStore
   @MappedDispatch() private var dispatch
 
@@ -15,25 +15,21 @@ internal struct ActionSheetRouteViewModifier: ViewModifier {
     self.actionSheet = actionSheet
   }
 
-  public func body(content: Content) -> some View {
-    RouteContents { self.routeContents(content: content, routeInfo: $0) }
-  }
-
-  private func routeContents(content: Content, routeInfo: RouteInfo) -> some View {
+  public func body(content: Content, routeInfo: RouteInfo) -> some View {
     let isActive = routeInfo.pathParameter == name
     let binding = Binding(
       get: { isActive },
       set: {
         if !$0 {
-          self.dispatch(routeInfo.current.navigate(to: routeInfo.current.path))
+          self.dispatch(routeInfo.waypoint.navigate(to: routeInfo.waypoint.path))
         }
       }
     )
     return
       content
-      .actionSheet(isPresented: binding) { actionSheet }
-      .environment(\.currentRoute, isActive ? routeInfo.current.next(with: name) : routeInfo.current)
-      .provideStore(anyStore)
+        .actionSheet(isPresented: binding) { actionSheet }
+        .nextWaypoint(with: isActive ? name : nil)
+        .provideStore(anyStore)
   }
 }
 

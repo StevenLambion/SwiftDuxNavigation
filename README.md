@@ -5,7 +5,12 @@
 [![Swift Version][swift-image]][swift-url]
 ![Platform Versions][ios-image]
 
-SwiftDux Navigation implements deep-link routing for SwiftUI applications. It's currently in an early development stage. The library's goal is to take responsibility of the underlying navigational work of an application, so a developer can put more focus on higher-level needs.
+SwiftDux Navigation implements deep-link routing for SwiftUI applications. It's currently in an early development stage.
+
+## Purpose
+The purpose of this library is to provide a stateful, deep-link navigational system for an application. In the same way that SwiftUI views represent the application's current state, it does the same for navigation. The library handles this by utilizing a single navigational state object. This state is updated through a reducer function. The changes from the navigational state are then propagated throughout the SwiftUI view hierarchy.
+
+It also provide a small set of primitive navigational views out-of-the-box, but it should not be seen as a UI library. To reduce opinionated UI decisions, it intentionally leaves out platform-specific functionality that may require extra intervention to implement. For example, displaying a right chevron in a navigable list on iOS. Rather than adding extra logic to the `RouteLink` view, it's better for the app developer to implement it the way they see fit. In terms of extensibility, the library should provide everything needed to create new navigational views that it may lack.
 
 ## Features
 - Route style navigation.
@@ -13,7 +18,7 @@ SwiftDux Navigation implements deep-link routing for SwiftUI applications. It's 
 - Save and restore the navigation via `PersistStateMiddleware`.
 - Multi-UIScene support.
 - Master-detail routing.
-- Automatically passes the store object across the view hierarchies.
+- Automatically passes the store object across view hierarchies.
 
 ## Navigation Views
 - `SplitNavigationView`
@@ -34,15 +39,10 @@ SwiftDux Navigation implements deep-link routing for SwiftUI applications. It's 
 - `View.alertRoute(_:content:)` - Displays a route as an alert.
 
 ## Environment Values
-- `currentRoute` - Get information about the current route relative to the view.
-
-[swift-image]: https://img.shields.io/badge/swift-5.2-orange.svg
-[ios-image]: https://img.shields.io/badge/platforms-iOS%2013%20-222.svg
-[swift-url]: https://swift.org/
-[license-image]: https://img.shields.io/badge/License-MIT-blue.svg
-[license-url]: LICENSE
+- `waypoint` - Get information about the current waypoint relative to the view.
 
 ## Getting started
+
 
 1. Add navigation support to the application state by adhering to the `NavigationStateRoot` protocol.
     ```swift
@@ -76,6 +76,19 @@ SwiftDux Navigation implements deep-link routing for SwiftUI applications. It's 
       }
     }
     ```
+## Terminology
+The library uses specific terminology for the different parts of navigation. Below shows the navigational structure of a notes app. It's broken up into three types of components:
+* __Routes__ - Navigational paths within the application.  The notes app has 4 possible routes:
+  - "/"
+  - "/settings"
+  - "/notes"
+  - "/notes/{id}"
+* __Waypoints__ - Individual destinations within a route. A route is made up of 2 or more waypoints. The last waypoint is its own destination. Each screen in the notes app represents a single waypoint.
+* __Legs__ - Segments that connect one waypoint to another within a route.
+
+<div style="text-align:center">
+  <img src="Images/terminology.png" width="900"/>
+</div>
 
 ## Navigating the application
 
@@ -97,25 +110,25 @@ RouteLink(path: "/person/\(id)/company")  { Text("Label") }
 RouteLink(path: id, isDetail: true) { Text("Label") }
 ```
 
-### CurrentRoute
-CurrentRoute is an environment value that provides information about the current route of a view. It can also be used to navigates the application relative to that view's location.
+### Waypoint
+A waypoint is a single destination within a route. Examples of a waypoint might be a screen, window, action sheet, or alert. The last waypoint of an active route is the current destination of the user. You can navigate relative to a waypoint using its `navigate(to:inScene:isDetail:animate:)` method.
 
 ```swift
 @MappedDispatch() private var dispatch
-Environment(\.currentRoute) private var currentRoute
+Environment(\.waypoint) private var waypoint
 
 // Pass a single path parameter or component.
 let id = 123
-dispatch(currentRoute.navigate(to: id))
+dispatch(waypoint.navigate(to: id))
 
 // Go up a level.
-dispatch(currentRoute.navigate(to: ".."))
+dispatch(waypoint.navigate(to: ".."))
 
 // Pass an absolute path.
-dispatch(currentRoute.navigate(to: "/person/\(id)/company"))
+dispatch(waypoint.navigate(to: "/person/\(id)/company"))
 
 // Navigate the detail route.
-dispatch(currentRoute.navigate(to: id, isDetail: true) { Text("Label") }
+dispatch(waypoint.navigate(to: id, isDetail: true) { Text("Label") }
 ```
 
 ### NavigationAction
@@ -251,5 +264,11 @@ TabNavigationView(initialTab: "allMusic") {
 }
 
 // Programmatically navigate to a tab route:
-currentRoute.navigate(to: "/allMusic")
+dispatch(waypoint.navigate(to: "allMusic"))
 ```
+
+[swift-image]: https://img.shields.io/badge/swift-5.2-orange.svg
+[ios-image]: https://img.shields.io/badge/platforms-iOS%2013%20-222.svg
+[swift-url]: https://swift.org/
+[license-image]: https://img.shields.io/badge/License-MIT-blue.svg
+[license-url]: LICENSE

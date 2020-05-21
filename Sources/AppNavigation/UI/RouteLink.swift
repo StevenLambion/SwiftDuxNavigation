@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Button that navigates to  a route.
 public struct RouteLink<Label>: View where Label: View {
-  @Environment(\.currentRoute) private var currentRoute
+  @Environment(\.waypoint) private var waypoint
   @MappedDispatch() private var dispatch
 
   private var path: String
@@ -13,11 +13,12 @@ public struct RouteLink<Label>: View where Label: View {
   private var animate: Bool
   private var label: Label
 
-  // swift-format-ignore: ValidateDocumentationComments
-
-  /// Initiate a new `RouteLink`
+  /// Initiate a new `RouteLink`.
+  ///
   /// - Parameters:
   ///   - path: The path to navigate to. It may be a relative or absolute path.
+  ///   - scene: The scene of the path.
+  ///   - isDetail: If it's for the detail route.
   ///   - animate: Animate the navigation.
   ///   - label: The label of the button.
   public init<T>(path: T, scene: String? = nil, isDetail: Bool? = nil, animate: Bool = true, @ViewBuilder label: () -> Label)
@@ -34,6 +35,6 @@ public struct RouteLink<Label>: View where Label: View {
   }
 
   private func navigate() {
-    dispatch(self.currentRoute.navigate(to: self.path, inScene: self.scene, isDetail: self.isDetail != false, animate: self.animate))
+    dispatch(self.waypoint.navigate(to: self.path, inScene: self.scene, isDetail: self.isDetail != false, animate: self.animate))
   }
 }

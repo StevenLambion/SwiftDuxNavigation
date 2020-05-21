@@ -4,11 +4,12 @@
 
   /// Create a master-detail style split navigation view.
   public struct SplitNavigationView<MasterContent>: ConnectableView where MasterContent: View {
-    @Environment(\.currentRoute) private var currentRoute
+    @Environment(\.waypoint) private var waypoint
 
     private var masterContent: MasterContent
 
     /// Initiate a `SplitNavigationView` with a root view.
+    /// 
     /// - Parameter masterContent: The master view.
     public init(@ViewBuilder masterContent: () -> MasterContent) {
       self.masterContent = masterContent()
@@ -24,7 +25,7 @@
     }
 
     public func map(state: NavigationStateRoot) -> Props? {
-      guard let scene = currentRoute.resolveSceneState(in: state) else { return nil }
+      guard let scene = waypoint.resolveSceneState(in: state) else { return nil }
       return Props(
         activeDetailRoute: scene.detailRoute.legsByPath["/"]?.component ?? "/",
         animate: scene.animate
