@@ -72,16 +72,20 @@ SwiftDux Navigation implements deep-link routing for SwiftUI applications. It's 
     }
     ```
 ## Terminology
-
-* __Routes__ are navigational paths within the application. 
-* __Waypoints__ are the individual destination within a route's path.
-* __Leg__ - The individual segments of a route that connect the waypoints together.
+The library uses specific terminology for the different parts of navigation. Below shows the navigational structure of a notes app. It's broken up into three types of components:
+* __Routes__ - Navigational paths within the application.  The notes app has 4 possible routes:
+  - "/"
+  - "/settings"
+  - "/notes"
+  - "/notes/{id}"
+* __Waypoints__ - Individual destinations within a route. A route is made up of 2 or more waypoints. The last waypoint is its own destination. Each screen in the notes app represents a single waypoint.
+* __Legs__ - Segments that connect one waypoint to another within a route.
 
 <div style="text-align:center">
   <img src="Images/terminology.png" width="900"/>
 </div>
 
-### Navigating the application
+## Navigating the application
 
 ### RouteLink
 This is similar to a SwiftUI NavigationLink, and can be used just like one. It navigates to a new route relative to the containing view when the user taps it.
@@ -101,8 +105,8 @@ RouteLink(path: "/person/\(id)/company")  { Text("Label") }
 RouteLink(path: id, isDetail: true) { Text("Label") }
 ```
 
-### CurrentRoute
-CurrentRoute is an environment value that provides information about the current route of a view. It can also be used to navigates the application relative to that view's location.
+### Waypoint
+A waypoint is a single destination within a route. Examples of a waypoint might be a screen, window, action sheet, or alert. The last waypoint of an active route is the current destination of the user. You can navigate relative to a waypoint using its `navigate(to:inScene:isDetail:animate:)` method.
 
 ```swift
 @MappedDispatch() private var dispatch
@@ -255,7 +259,7 @@ TabNavigationView(initialTab: "allMusic") {
 }
 
 // Programmatically navigate to a tab route:
-waypoint.navigate(to: "/allMusic")
+dispatch(waypoint.navigate(to: "allMusic"))
 ```
 
 [swift-image]: https://img.shields.io/badge/swift-5.2-orange.svg
