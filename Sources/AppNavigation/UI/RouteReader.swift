@@ -40,9 +40,7 @@ public struct RouteReader<Content>: ConnectableView where Content: View {
   public func body(props: Props) -> some View {
     let leg = props.route.legsByPath[waypoint.path]
     if props.shouldComplete {
-      DispatchQueue.main.async {
-        self.dispatch(self.waypoint.completeNavigation())
-      }
+      self.dispatch(self.waypoint.completeNavigation())
     }
     return content(
       RouteInfo(

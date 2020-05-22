@@ -6,7 +6,6 @@
   internal struct NativeSplitNavigationView<MasterContent>: UIViewControllerRepresentable
   where MasterContent: View {
     @Environment(\.store) private var store
-    @Environment(\.splitNavigationOptions) private var splitNavigationOptions
     @Environment(\.detailRoutes) private var detailRoutes
     @Environment(\.waypoint) private var waypoint
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -35,7 +34,6 @@
       context.coordinator.waypoint = waypoint
       context.coordinator.isCollapsed = horizontalSizeClass == .compact
       context.coordinator.activeDetailRoute = activeDetailRoute
-      context.coordinator.updateOptions(splitNavigationOptions)
       context.coordinator.setMasterContent(masterContent)
     }
 
@@ -46,7 +44,6 @@
         activeDetailRoute: activeDetailRoute,
         waypoint: waypoint,
         isCollapsed: horizontalSizeClass == .compact,
-        splitNavigationOptions: splitNavigationOptions,
         masterContent: masterContent
       )
     }
