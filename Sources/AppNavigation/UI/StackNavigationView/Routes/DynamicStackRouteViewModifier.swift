@@ -11,7 +11,7 @@
     var routeContent: (T) -> RouteContent
 
     @State private var childRoutes: StackRouteStorage = StackRouteStorage()
-    @State private var stackNavigationOptions: Set<StackNavigationOption> = Set()
+    @State private var stackNavigationOptions: StackNavigationOptions = StackNavigationOptions()
 
     func body(content: Content) -> some View {
       RouteReader { self.routeContents(content: content, routeInfo: $0) }
@@ -27,7 +27,7 @@
             .nextWaypoint(with: nextWaypoint!)
             .environment(\.waypoint, nextWaypoint!)
             .stackRoutePreference(createRoute(pathParameter: pathParameter!))
-            .stackNavigationPreference(stackNavigationOptions)
+            .stackNavigationPreference { $0 = self.stackNavigationOptions }
         } else {
           content
         }

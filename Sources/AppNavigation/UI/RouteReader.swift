@@ -59,13 +59,13 @@ public struct RouteReader<Content>: ConnectableView where Content: View {
 public struct RouteInfo {
   /// The waypoint of the view.
   public var waypoint: Waypoint
-  
+
   /// The current path parameter of the waypoint if it's active.
   public var pathParameter: String?
-  
+
   /// The full path of the current route.
   public var path: String
-  
+
   /// If the waypoint is the final destination.
   public var isLastWaypoint: Bool
 }
@@ -73,37 +73,35 @@ public struct RouteInfo {
 /// Convenience for views that rely on routing information.
 public protocol RouteReaderView: View {
   associatedtype Content: View
-  
+
   /// The body of the view.
   /// - Parameter routeInfo: The current routing information.
+  /// - Returns: The view.
   func body(routeInfo: RouteInfo) -> Content
-  
 }
 
 extension RouteReaderView {
-  
+
   public var body: RouteReader<Content> {
     RouteReader(content: body)
   }
-  
 }
 
 /// Convenience for view modifiers that rely on routing information.
 public protocol RouteReaderViewModifier: ViewModifier {
   associatedtype RouteReaderContent: View
-  
+
   /// The body of the view.
   /// - Parameters:
   ///   - content: The content to modify.
   ///   - routeInfo: The current routing information.
+  /// - Returns: The view.
   func body(content: Content, routeInfo: RouteInfo) -> RouteReaderContent
-  
 }
 
 extension RouteReaderViewModifier {
-  
+
   public func body(content: Content) -> RouteReader<RouteReaderContent> {
     RouteReader { self.body(content: content, routeInfo: $0) }
   }
-  
 }

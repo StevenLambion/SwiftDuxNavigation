@@ -12,7 +12,7 @@ internal struct TabBranchViewModifier: ViewModifier {
 }
 
 extension View {
-  
+
   /// Add a tab to a TabNavigationView.
   ///
   /// - Parameters:

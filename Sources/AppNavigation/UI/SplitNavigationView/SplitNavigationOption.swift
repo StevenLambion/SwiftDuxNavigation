@@ -4,7 +4,6 @@
   import SwiftDux
 
   internal enum SplitNavigationOption: Hashable {
-    case showDisplayModeButton(Bool)
     case preferredDisplayMode(UISplitViewController.DisplayMode)
     case primaryEdge(UISplitViewController.PrimaryEdge)
     case presentsWithGesture(Bool)
@@ -13,7 +12,6 @@
 
     static var defaultOptions: Set<SplitNavigationOption> {
       Set<SplitNavigationOption>([
-        .showDisplayModeButton(true),
         .preferredDisplayMode(.allVisible),
         .primaryEdge(.leading),
         .presentsWithGesture(true),
@@ -39,14 +37,6 @@
 
     internal func setSplitNavigationOption(_ preference: Set<SplitNavigationOption>) -> some View {
       self.transformEnvironment(\.splitNavigationOptions) { $0 = $0.union(preference) }
-    }
-
-    /// Show the display mode button.
-    ///
-    /// - Parameter enabled: show the button.
-    /// - Returns: The view.
-    public func splitNavigationShowDisplayModeButton(_ enabled: Bool) -> some View {
-      self.setSplitNavigationOption([.showDisplayModeButton(enabled)])
     }
 
     /// Set the preferred display mode.

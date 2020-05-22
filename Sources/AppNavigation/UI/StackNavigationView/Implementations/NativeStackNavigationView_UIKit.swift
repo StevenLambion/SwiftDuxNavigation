@@ -6,7 +6,6 @@
   internal struct NativeStackNavigationView<RootView>: UIViewControllerRepresentable
   where RootView: View {
     @Environment(\.waypoint) private var waypoint
-    @Environment(\.splitNavigationDisplayModeButton) private var splitNavigationDisplayModeButton
     @MappedDispatch() private var dispatch
 
     var animate: Bool
@@ -29,7 +28,6 @@
     func updateUIViewController(_ uiViewController: UINavigationController, context: Context) {
       context.coordinator.waypoint = waypoint
       context.coordinator.animate = animate
-      context.coordinator.splitNavigationDisplayModeButton = splitNavigationDisplayModeButton
       context.coordinator.setRootView(rootView: rootView)
     }
 
@@ -38,7 +36,6 @@
         dispatch: dispatch,
         waypoint: waypoint,
         animate: animate,
-        splitNavigationDisplayModeButton: splitNavigationDisplayModeButton,
         rootView: rootView
       )
     }

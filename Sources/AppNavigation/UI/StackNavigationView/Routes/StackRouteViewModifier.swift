@@ -8,7 +8,7 @@
     var routeContent: RouteContent
 
     @State private var childRoutes: StackRouteStorage = StackRouteStorage()
-    @State private var stackNavigationOptions: Set<StackNavigationOption> = Set()
+    @State private var stackNavigationOptions: StackNavigationOptions = StackNavigationOptions()
 
     public func body(content: Content, routeInfo: RouteInfo) -> some View {
       Group {
@@ -21,7 +21,7 @@
               self.stackNavigationOptions = $0
             }
             .stackRoutePreference(createRoute(from: routeInfo.waypoint))
-            .stackNavigationPreference(stackNavigationOptions)
+            .stackNavigationPreference { $0 = self.stackNavigationOptions }
         } else {
           content
         }

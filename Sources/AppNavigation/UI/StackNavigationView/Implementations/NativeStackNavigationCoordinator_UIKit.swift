@@ -18,7 +18,8 @@
       self.init(
         path: path,
         fromBranch: fromBranch,
-        viewController: UIHostingController(rootView: view))
+        viewController: UIHostingController(rootView: view)
+      )
     }
 
     static func == (lhs: StackRoute, rhs: StackRoute) -> Bool {
@@ -29,7 +30,6 @@
   internal final class StackNavigationCoordinator: NSObject {
     var waypoint: Waypoint
     var animate: Bool
-    var splitNavigationDisplayModeButton: UIBarButtonItem?
 
     var rootViewController: UIViewController?
     weak var navigationController: UINavigationController? {
@@ -56,6 +56,9 @@
         }
       }
     }
+    private var showSplitViewDisplayModeButton: Bool = false {
+      didSet { updateSplitNavigationDisplayModeButton() }
+    }
 
     private var enableSwipeNavigation: Bool = true {
       didSet {
@@ -67,13 +70,11 @@
       dispatch: ActionDispatcher,
       waypoint: Waypoint,
       animate: Bool,
-      splitNavigationDisplayModeButton: UIBarButtonItem?,
       rootView: Content
     ) where Content: View {
       self.dispatch = dispatch
       self.waypoint = waypoint
       self.animate = animate
-      self.splitNavigationDisplayModeButton = splitNavigationDisplayModeButton
       super.init()
       setRootView(rootView: rootView)
     }
@@ -82,14 +83,14 @@
       self.setRootViewInternal(
         rootView:
           rootView
+          .onPreferenceChange(StackNavigationPreferenceKey.self) { [weak self] in
+            self?.updateOptions($0)
+          }
           .onPreferenceChange(StackRoutePreferenceKey.self) { [weak self] in
             self?.updateRoutes($0)
-          }.onPreferenceChange(StackNavigationPreferenceKey.self) { [weak self] in
-            self?.updateOptions($0)
           }
           // Don't let parent navigation views use the routes.
           .stackRoutePreference(StackRouteStorage())
-          .environment(\.splitNavigationDisplayModeButton, nil)
       )
     }
 
@@ -117,25 +118,15 @@
       updateNavigation()
     }
 
-    private func updateOptions(_ options: Set<StackNavigationOption>) {
-      options.forEach { option in
-        switch option {
-        case .swipeGesture(let enabled):
-          self.enableSwipeNavigation = enabled
-        case .hideBarsOnTap(let enabled):
-          self.navigationController?.hidesBarsOnTap = enabled
-        case .hideBarsOnSwipe(let enabled):
-          self.navigationController?.hidesBarsOnSwipe = enabled
-        case .hidesBarsWhenKeyboardAppears(let enabled):
-          self.navigationController?.hidesBarsWhenKeyboardAppears = enabled
-        case .hidesBarsWhenVerticallyCompact(let enabled):
-          self.navigationController?.hidesBarsWhenVerticallyCompact = enabled
-        case .barTintColor(let color):
-          self.navigationController?.navigationBar.tintColor = color
-        case .replaceRoot(let enabled):
-          self.replaceRoot = enabled
-        }
-      }
+    private func updateOptions(_ options: StackNavigationOptions) {
+      self.enableSwipeNavigation = options.swipeGesture
+      self.navigationController?.hidesBarsOnTap = options.hideBarsOnTap
+      self.navigationController?.hidesBarsOnSwipe = options.hideBarsOnSwipe
+      self.navigationController?.hidesBarsWhenKeyboardAppears = options.hidesBarsWhenKeyboardAppears
+      self.navigationController?.hidesBarsWhenVerticallyCompact = options.hidesBarsWhenVerticallyCompact
+      self.navigationController?.navigationBar.tintColor = options.barTintColor
+      self.replaceRoot = options.replaceRoot
+      self.showSplitViewDisplayModeButton = options.showSplitViewDisplayModeButton
     }
 
     private func updateNavigation() {
@@ -151,25 +142,18 @@
         prerenderViewController(viewController: nextViewController)
       }
       navigationController?.setViewControllers(viewControllers, animated: animate)
-      
-      if let splitNavigationDisplayModeButton = splitNavigationDisplayModeButton {
-        rootViewController.navigationItem.leftBarButtonItem = splitNavigationDisplayModeButton
-        rootViewController.navigationItem.leftItemsSupplementBackButton = true
-      } else {
-        rootViewController.navigationItem.leftBarButtonItem = nil
-        rootViewController.navigationItem.leftItemsSupplementBackButton = false
-      }
     }
 
-    private func shouldPerformPush(with viewControllers: [UIViewController]) -> Bool {
-      guard let currentCount = navigationController?.viewControllers.count else { return false }
-      guard currentCount > 0 && viewControllers.count - 1 == currentCount else { return false }
-      for i in 0..<currentCount {
-        if viewControllers[i] != navigationController?.viewControllers[i] {
-          return false
-        }
+    private func updateSplitNavigationDisplayModeButton() {
+      guard let viewController = navigationController?.viewControllers.first else { return }
+      guard let button = viewController.splitViewController?.displayModeButtonItem else { return }
+      if showSplitViewDisplayModeButton {
+        viewController.navigationItem.leftBarButtonItem = button
+        viewController.navigationItem.leftItemsSupplementBackButton = true
+      } else if viewController.navigationItem.leftBarButtonItem == button {
+        viewController.navigationItem.leftBarButtonItem = nil
+        viewController.navigationItem.leftItemsSupplementBackButton = false
       }
-      return true
     }
 
     /// Pre-render a SwiftUI hosted view, so the navigation item is ready.
@@ -196,7 +180,7 @@
   extension StackNavigationCoordinator: UINavigationControllerDelegate {
 
     func navigationController(_ navigationController: UINavigationController, willShow viewController: UIViewController, animated: Bool) {
-      viewController.viewDidLayoutSubviews()
+      updateSplitNavigationDisplayModeButton()
     }
 
     func navigationController(_ navigationController: UINavigationController, didShow viewController: UIViewController, animated: Bool) {

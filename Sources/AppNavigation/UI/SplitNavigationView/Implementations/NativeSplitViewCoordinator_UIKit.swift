@@ -16,7 +16,6 @@
 
     private var masterViewController: UIViewController?
     private var detailViewController: UIViewController?
-    private var showDisplayModeButton: Bool = true
 
     private var detailContent: (() -> AnyView)? {
       guard let activeDetailRoute = activeDetailRoute else { return nil }
@@ -53,8 +52,6 @@
     func updateOptions(_ options: Set<SplitNavigationOption>) {
       options.forEach { option in
         switch option {
-        case .showDisplayModeButton(let enabled):
-          self.showDisplayModeButton = enabled
         case .preferredDisplayMode(let displayMode):
           self.splitViewController?.preferredDisplayMode = displayMode
         case .preferredPrimaryColumnWidthFraction(let value):
@@ -75,7 +72,7 @@
       let masterView = StackNavigationView {
         if isCollapsed && detailContent != nil && activeDetailRoute != "/" {
           masterContent.stackRoute {
-            detailContent.map { $0() }
+            detailContent?()
           }
           .resetRoute(with: "/", isDetail: true)
         } else {
@@ -84,7 +81,7 @@
       }
       .id(id)
       .provideStore(self.store)
-      
+
       updateMasterViewController(content: masterView)
     }
 
@@ -102,11 +99,9 @@
       let id = waypoint.path + "@split-navigation-detail"
       let detailContent = !isCollapsed ? self.detailContent : nil
       let detailView = StackNavigationView {
-        detailContent.map { $0() }.stackNavigationReplaceRoot(true)
+        detailContent?()
       }
       .id(id)
-      .environment((\.waypoint), Waypoint(sceneName: self.waypoint.sceneName, isDetail: true))
-      .environment(\.splitNavigationDisplayModeButton, showDisplayModeButton ? splitViewController?.displayModeButtonItem : nil)
       .provideStore(self.store)
 
       updateDetailViewController(content: detailView)
