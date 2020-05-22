@@ -66,10 +66,12 @@ public struct Waypoint: Equatable {
   ///   - animate: Animate the anvigation.
   /// - Returns: A navigation action.
   public func navigate(to path: String, inScene scene: String? = nil, isDetail isDetailOverride: Bool? = nil, animate: Bool = true)
-    -> Action
+    -> ActionPlan<NavigationStateRoot>
   {
     let isDetailForPath = isDetailOverride ?? self.isDetail
-    guard let absolutePath = standardizedPath(forPath: path, notRelative: isDetailForPath != isDetail) else { return EmptyAction() }
+    guard let absolutePath = standardizedPath(forPath: path, notRelative: isDetailForPath != isDetail) else {
+      return ActionPlan { _ in }
+    }
     return NavigationAction.navigate(to: absolutePath, inScene: scene ?? sceneName, isDetail: isDetailForPath, animate: animate)
   }
 
@@ -152,7 +154,7 @@ extension View {
   public func scene(named name: String) -> some View {
     self.environment(\.waypoint, Waypoint(sceneName: name, path: "/"))
   }
-  
+
   /// Set the view as the next waypoint.
   ///
   /// - Parameter waypoint: Pass a custom waypoint to use.
@@ -164,7 +166,7 @@ extension View {
       $0 = waypoint
     }
   }
-  
+
   /// Set the view as the next waypoint.
   ///
   /// - Parameters:
@@ -177,7 +179,7 @@ extension View {
       $0 = $0.next(with: component, isBranch: isBranch)
     }
   }
-  
+
   /// Resets the route by applying a root waypoint.
   ///
   /// This should only be used to indicate the detail route's root waypoint.

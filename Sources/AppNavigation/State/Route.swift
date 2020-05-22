@@ -65,7 +65,9 @@ extension NavigationState {
 
     /// The last leg of the route.
     public var lastLeg: RouteLeg {
-      orderedLegPaths.last.flatMap { legsByPath[$0] } ?? RouteLeg()
+      let index = orderedLegPaths.count - 2
+      guard index > 0 else { return RouteLeg() }
+      return legsByPath[orderedLegPaths[index]] ?? RouteLeg()
     }
 
     /// The route caches by their path.
