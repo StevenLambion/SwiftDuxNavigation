@@ -265,6 +265,7 @@ TabNavigationView(initialTab: "allMusic") {
     .tabItem { Text("Playlists") }
     .tag("playlists")
 }
+```
 
 [swift-image]: https://img.shields.io/badge/swift-5.2-orange.svg
 [ios-image]: https://img.shields.io/badge/platforms-iOS%2013%20-222.svg
