@@ -21,19 +21,24 @@ public struct RouteReader<Content>: ConnectableView where Content: View {
   public struct Props: Equatable {
     var route: NavigationState.Route
     var path: String?
+    var completed: Bool
     var shouldComplete: Bool
+    var animate: Bool
 
     public static func == (lhs: Props, rhs: Props) -> Bool {
-      lhs.path == rhs.path && lhs.shouldComplete == rhs.shouldComplete
+      lhs.completed == rhs.completed && lhs.path == rhs.path && lhs.shouldComplete == rhs.shouldComplete
     }
   }
 
   public func map(state: NavigationStateRoot) -> Props? {
+    guard let scene = waypoint.resolveSceneState(in: state) else { return nil }
     guard let route = waypoint.resolveState(in: state) else { return nil }
     return Props(
       route: route,
       path: route.legsByPath[waypoint.path]?.path,
-      shouldComplete: !route.completed && waypoint.path == route.lastLeg.parentPath
+      completed: route.completed,
+      shouldComplete: waypoint.shouldComplete(for: route),
+      animate: scene.animate
     )
   }
 
@@ -47,7 +52,9 @@ public struct RouteReader<Content>: ConnectableView where Content: View {
         waypoint: waypoint,
         pathParameter: leg?.component,
         path: props.route.path,
-        isLastWaypoint: leg?.path == props.route.path
+        isLastWaypoint: leg?.path == props.route.path,
+        completed: props.route.completed,
+        animate: props.animate
       )
     )
   }
@@ -66,6 +73,12 @@ public struct RouteInfo {
 
   /// If the waypoint is the final destination.
   public var isLastWaypoint: Bool
+
+  /// If the routing has completed.
+  public var completed: Bool
+
+  /// If the routing is animating.
+  public var animate: Bool
 }
 
 /// Convenience for views that rely on routing information.

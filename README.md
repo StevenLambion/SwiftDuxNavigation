@@ -251,21 +251,20 @@ RouteLink(path: "notes/\(note.id)", isDetail: true) {
 ```
 
 ## Tab navigation
-The `TabNavigationView` presents a navigational tab view. It uses `View.tabBranch` to represent each tab.
+The `TabNavigationView` presents a navigational tab view. It uses the same `View.tabItem` API of the regular TabView. Underneath the hood, each tab is tied to a specific route by name.
 
 ```swift
 TabNavigationView(initialTab: "allMusic") {
   AllMusicContainer()
-    .tabBranch("allMusic") { Text("All Music") }
+    .tabItem { Text("All Music") }
+    .tag("allMusic")
   AlbumsContainer()
-    .tabBranch("albums") { Text("Albums") }
+    .tabItem { Text("Albums") }
+    .tag("albums")
   PlaylistsContainer()
-    .tabBranch("playlists") { Text("Playlists") }
+    .tabItem { Text("Playlists") }
+    .tag("playlists")
 }
-
-// Programmatically navigate to a tab route:
-dispatch(waypoint.navigate(to: "allMusic"))
-```
 
 [swift-image]: https://img.shields.io/badge/swift-5.2-orange.svg
 [ios-image]: https://img.shields.io/badge/platforms-iOS%2013%20-222.svg

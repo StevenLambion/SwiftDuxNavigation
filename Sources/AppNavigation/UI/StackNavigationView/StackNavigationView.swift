@@ -4,7 +4,7 @@
   import SwiftUI
 
   /// Create a stack-style navigation.
-  public struct StackNavigationView<RootView>: ConnectableView where RootView: View {
+  public struct StackNavigationView<RootView>: RouteReaderView where RootView: View {
     @Environment(\.waypoint) private var waypoint
 
     private var rootView: RootView
@@ -15,32 +15,12 @@
       self.rootView = rootView()
     }
 
-    public struct Props: Equatable {
-
-      /// Should the navigation animate.
-      var animate: Bool
-
-      /// Hides the navigation view when not animating and the route has completed.
-      /// This stops the UINavigationController from flashing view controllers before the
-      /// destination one.
-      var hide: Bool
-    }
-
-    public func map(state: NavigationStateRoot) -> Props? {
-      guard let scene = waypoint.resolveSceneState(in: state) else { return nil }
-      guard let route = waypoint.resolveState(in: state) else { return nil }
-      return Props(
-        animate: scene.animate,
-        hide: !scene.animate && !route.completed && route.lastLeg.path != waypoint.path
-      )
-    }
-
-    public func body(props: Props) -> some View {
+    public func body(routeInfo: RouteInfo) -> some View {
       NativeStackNavigationView(
-        animate: props.animate,
+        animate: routeInfo.animate,
         rootView: rootView
       )
-      .opacity(props.hide ? 0 : 1)
+      .opacity(!routeInfo.animate && !routeInfo.completed ? 0 : 1)
       .edgesIgnoringSafeArea(.all)
     }
   }

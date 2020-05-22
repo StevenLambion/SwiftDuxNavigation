@@ -4,7 +4,6 @@ import SwiftUI
 @available(iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 @available(OSX, unavailable)
 internal struct ActionSheetRouteViewModifier: RouteReaderViewModifier {
-  @Environment(\.store) var anyStore
   @MappedDispatch() private var dispatch
 
   var name: String
@@ -29,7 +28,6 @@ internal struct ActionSheetRouteViewModifier: RouteReaderViewModifier {
       content
       .actionSheet(isPresented: binding) { actionSheet }
       .nextWaypoint(with: isActive ? name : nil)
-      .provideStore(anyStore)
   }
 }
 

@@ -5,7 +5,6 @@
 
   internal struct DynamicStackRouteViewModifier<T, RouteContent>: ViewModifier
   where T: LosslessStringConvertible & Equatable, RouteContent: View {
-    @Environment(\.store) private var anyStore
     @Environment(\.waypoint) private var waypoint
 
     var routeContent: (T) -> RouteContent
@@ -48,7 +47,6 @@
           .onPreferenceChange(StackNavigationPreferenceKey.self) {
             self.stackNavigationOptions = $0
           }
-          .provideStore(anyStore)
       )
       if waypoint.isDetail {
         routes.detail.insert(newRoute, at: 0)

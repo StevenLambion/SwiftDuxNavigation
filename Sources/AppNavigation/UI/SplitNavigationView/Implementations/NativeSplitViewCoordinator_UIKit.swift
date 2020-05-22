@@ -8,7 +8,7 @@
       didSet { splitViewController?.delegate = self }
     }
 
-    var store: AnyStore
+    //var store: AnyStore
     var detailRoutes: [String: () -> AnyView]
     var activeDetailRoute: String?
     var waypoint: Waypoint
@@ -23,14 +23,14 @@
     }
 
     init(
-      store: AnyStore,
+      //store: AnyStore,
       detailRoutes: [String: () -> AnyView],
       activeDetailRoute: String?,
       waypoint: Waypoint,
       isCollapsed: Bool,
       masterContent: MasterContent
     ) {
-      self.store = store
+      //self.store = store
       self.detailRoutes = detailRoutes
       self.activeDetailRoute = activeDetailRoute
       self.waypoint = waypoint
@@ -71,7 +71,6 @@
         }
       }
       .id(waypoint.path + "@split-navigation-master")
-      .provideStore(self.store)
 
       updateMasterViewController(content: masterView)
     }
@@ -87,13 +86,11 @@
     }
 
     private func updateDetailContent() {
-      let id = waypoint.path + "@split-navigation-detail"
       let detailContent = !isCollapsed ? self.detailContent : nil
       let detailView = StackNavigationView {
         detailContent?()
       }
-      .id(id)
-      .provideStore(self.store)
+      .id(waypoint.path + "@split-navigation-detail")
 
       updateDetailViewController(content: detailView)
     }

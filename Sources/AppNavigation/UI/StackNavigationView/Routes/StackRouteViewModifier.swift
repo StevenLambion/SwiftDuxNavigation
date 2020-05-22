@@ -4,7 +4,6 @@
   import SwiftUI
 
   internal struct StackRouteViewModifier<RouteContent>: RouteReaderViewModifier where RouteContent: View {
-    @Environment(\.store) private var anyStore
     var routeContent: RouteContent
 
     @State private var childRoutes: StackRouteStorage = StackRouteStorage()
@@ -41,7 +40,6 @@
           .onPreferenceChange(StackNavigationPreferenceKey.self) {
             self.stackNavigationOptions = $0
           }
-          .provideStore(anyStore)
       )
       if waypoint.isDetail {
         routes.detail.append(newRoute)

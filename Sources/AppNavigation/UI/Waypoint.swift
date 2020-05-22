@@ -121,6 +121,10 @@ public struct Waypoint: Equatable {
     NavigationAction.stopCaching(path: path, scene: sceneName, isDetail: isDetail)
   }
 
+  public func shouldComplete(for route: NavigationState.Route) -> Bool {
+    !route.completed && path == route.lastLeg.parentPath
+  }
+
   /// Standardizes a relative path off the route's path.
   ///
   /// - Parameters:

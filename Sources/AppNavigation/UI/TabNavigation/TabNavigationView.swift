@@ -3,7 +3,6 @@ import SwiftUI
 
 /// A tab view that navigates using  routes.
 public struct TabNavigationView<Content, T>: RouteReaderView where Content: View, T: LosslessStringConvertible & Hashable {
-  @Environment(\.store) private var anyStore
   @MappedDispatch() private var dispatch
 
   private var content: Content
@@ -21,7 +20,7 @@ public struct TabNavigationView<Content, T>: RouteReaderView where Content: View
 
   public func body(routeInfo: RouteInfo) -> some View {
     let pathParameter = createPathParameterBinding(waypoint: routeInfo.waypoint, pathParameter: routeInfo.pathParameter)
-    return TabView(selection: pathParameter) { content.provideStore(anyStore) }
+    return TabView(selection: pathParameter) { content }
       .nextWaypoint(with: String(pathParameter.wrappedValue))
       .onAppear {
         if routeInfo.path == routeInfo.waypoint.path {

@@ -35,6 +35,6 @@ public struct RouteLink<Label>: View where Label: View {
   }
 
   private func navigate() {
-    dispatch(self.waypoint.navigate(to: self.path, inScene: self.scene, isDetail: self.isDetail != false, animate: self.animate))
+    dispatch(self.waypoint.navigate(to: self.path, inScene: self.scene, isDetail: self.isDetail, animate: self.animate))
   }
 }

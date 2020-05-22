@@ -5,7 +5,6 @@
 
   internal struct NativeSplitNavigationView<MasterContent>: UIViewControllerRepresentable
   where MasterContent: View {
-    @Environment(\.store) private var store
     @Environment(\.detailRoutes) private var detailRoutes
     @Environment(\.waypoint) private var waypoint
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -29,7 +28,6 @@
     ) {}
 
     func updateUIViewController(_ uiViewController: UISplitViewController, context: Context) {
-      context.coordinator.store = store
       context.coordinator.detailRoutes = detailRoutes
       context.coordinator.waypoint = waypoint
       context.coordinator.isCollapsed = horizontalSizeClass == .compact
@@ -39,7 +37,6 @@
 
     func makeCoordinator() -> NativeSplitNavigationViewCoordinator<MasterContent> {
       return NativeSplitNavigationViewCoordinator<MasterContent>(
-        store: store,
         detailRoutes: detailRoutes,
         activeDetailRoute: activeDetailRoute,
         waypoint: waypoint,

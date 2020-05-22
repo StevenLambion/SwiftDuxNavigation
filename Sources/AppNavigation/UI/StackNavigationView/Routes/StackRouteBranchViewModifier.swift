@@ -2,7 +2,6 @@ import SwiftDux
 import SwiftUI
 
 internal struct StackRouteBranchViewModifier: RouteReaderViewModifier {
-  @Environment(\.store) private var anyStore
   @MappedDispatch() private var dispatch
 
   var name: String
@@ -16,7 +15,7 @@ internal struct StackRouteBranchViewModifier: RouteReaderViewModifier {
     }
     return Group {
       if isActive {
-        content.provideStore(anyStore).id(routeInfo.waypoint.path + routeInfo.pathParameter!).nextWaypoint(with: name, isBranch: true)
+        content.id(routeInfo.waypoint.path + routeInfo.pathParameter!).nextWaypoint(with: name, isBranch: true)
       }
     }
   }
