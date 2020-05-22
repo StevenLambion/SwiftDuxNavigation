@@ -10,54 +10,60 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
     var state = state
 
     switch action {
+    case .setOptions(let options):
+      state.navigation.options = options
+    case .setError(let error, let message):
+      state.navigation.lastNavigationError = error
+      state.navigation.lastNavigationErrorMessage = message
     case .beginRouting(let path, let sceneName, let isDetail, let animate):
-      state = updateRoute(forScene: sceneName, isDetail: isDetail, in: state) { route, scene in
-        scene.animate = animate
+      state = updateRoute(in: state, forScene: sceneName, isDetail: isDetail, animate: animate) { route, scene in
         scene.animate = beginRouting(route: &route, path: path)
       }
     case .beginPop(let path, let sceneName, let isDetail, let perserveBranch, let animate):
-      state = updateRoute(forScene: sceneName, isDetail: isDetail, in: state) { route, scene in
-        scene.animate = animate
+      state = updateRoute(in: state, forScene: sceneName, isDetail: isDetail, animate: animate) { route, scene in
         scene.animate = beginPop(route: &route, path: path, perserveBranch: perserveBranch)
       }
     case .completeRouting(let sceneName, let isDetail):
-      state = updateRoute(forScene: sceneName, isDetail: isDetail, in: state) { route, scene in
-        scene.animate = false
+      state = updateRoute(in: state, forScene: sceneName, isDetail: isDetail) { route, scene in
         completeRouting(route: &route)
       }
     case .clearScene(let name):
       state.navigation.sceneByName.removeValue(forKey: name)
     case .beginCaching(let path, let sceneName, let isDetail, let policy):
-      state = updateRoute(forScene: sceneName, isDetail: isDetail, in: state) { route, scene in
+      state = updateRoute(in: state, forScene: sceneName, isDetail: isDetail) { route, scene in
         beginCaching(route: &route, path: path, policy: policy)
       }
     case .stopCaching(let path, let sceneName, let isDetail):
-      state = updateRoute(forScene: sceneName, isDetail: isDetail, in: state) { route, scene in
+      state = updateRoute(in: state, forScene: sceneName, isDetail: isDetail) { route, scene in
         stopCaching(route: &route, path: path)
       }
     }
     return state
   }
 
-  private func updateScene(named name: String, in state: State, updater: (inout NavigationState.Scene) -> Void)
+  private func updateScene(in state: State, named name: String, animate: Bool = false, updater: (inout NavigationState.Scene) -> Void)
     -> State
   {
     var state = state
     var scene = state.navigation.sceneByName[name] ?? NavigationState.Scene(name: name)
     updater(&scene)
     state.navigation.sceneByName[name] = scene
+    if scene.animate && (!animate || !state.navigation.options.animationEnabled) {
+      scene.animate = false
+    }
     return state
   }
 
   private func updateRoute(
+    in state: State,
     forScene sceneName: String,
     isDetail: Bool,
-    in state: State,
+    animate: Bool = false,
     updater: (inout NavigationState.Route, inout NavigationState.Scene) -> Void
   )
     -> State
   {
-    updateScene(named: sceneName, in: state) { scene in
+    updateScene(in: state, named: sceneName) { scene in
       var route = isDetail ? scene.detailRoute : scene.route
       updater(&route, &scene)
       if isDetail {

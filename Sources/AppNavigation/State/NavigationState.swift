@@ -8,17 +8,44 @@ public protocol NavigationStateRoot {
 
 /// The state of the navigation system.
 public struct NavigationState: StateType {
+  /// Options of the navigation state.
+  public var options: Options = Options()
 
   /// All scenes by their name.
-  public var sceneByName: [String: Scene] = [
-    Scene.defaultName: Scene(name: Scene.defaultName)
-  ]
+  public var sceneByName: [String: Scene]
+
+  public var lastNavigationError: NavigationError?
+  public var lastNavigationErrorMessage: String?
 
   public init(
+    options: Options = Options(),
     sceneByName: [String: Scene] = [
       Scene.defaultName: Scene(name: Scene.defaultName)
-    ]
+    ],
+    lastNavigationError: NavigationError? = nil,
+    lastNavigationErrorMessage: String? = nil
   ) {
+    self.options = options
     self.sceneByName = sceneByName
+    self.lastNavigationError = lastNavigationError
+    self.lastNavigationErrorMessage = lastNavigationErrorMessage
+  }
+}
+
+extension NavigationState {
+
+  /// Options for the NavigationState.
+  public struct Options: StateType {
+
+    /// The timeout for uncompleted routes.
+    var completionTimeout: RunLoop.SchedulerTimeType.Stride
+
+    /// Enable route animations.
+    var animationEnabled: Bool
+
+    public init(completionTimeout: RunLoop.SchedulerTimeType.Stride = .seconds(1), animationEnabled: Bool = true) {
+      self.completionTimeout = completionTimeout
+      self.animationEnabled = animationEnabled
+    }
   }
 }

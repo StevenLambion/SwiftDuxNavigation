@@ -26,8 +26,8 @@ internal struct AlertRouteViewModifier: RouteReaderViewModifier {
     )
     return
       content
-        .nextWaypoint(with: isActive ? name : nil)
-        .alert(isPresented: binding) { alert }
+      .nextWaypoint(with: isActive ? name : nil)
+      .alert(isPresented: binding) { alert }
   }
 }
 

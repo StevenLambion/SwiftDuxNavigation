@@ -27,9 +27,9 @@ internal struct ActionSheetRouteViewModifier: RouteReaderViewModifier {
     )
     return
       content
-        .actionSheet(isPresented: binding) { actionSheet }
-        .nextWaypoint(with: isActive ? name : nil)
-        .provideStore(anyStore)
+      .actionSheet(isPresented: binding) { actionSheet }
+      .nextWaypoint(with: isActive ? name : nil)
+      .provideStore(anyStore)
   }
 }
 

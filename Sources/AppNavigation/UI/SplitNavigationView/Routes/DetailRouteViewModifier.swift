@@ -9,11 +9,18 @@
     var name: String?
     var detailContent: DetailContent
 
+    private var detailPath: String {
+      guard let name = name, !name.isEmpty else {
+        return "/"
+      }
+      return "/\(name)/"
+    }
+
     func body(content: Content) -> some View {
       var detailRoutes = self.detailRoutes
       detailRoutes[name ?? "/"] = {
         AnyView(
-          DetailView(content: { self.detailContent }).resetRoute(with: "/\(self.name ?? "")/", isDetail: true)
+          DetailView(content: { self.detailContent }).resetRoute(with: self.detailPath, isDetail: true)
         )
       }
       return content.environment(\.detailRoutes, detailRoutes)

@@ -16,7 +16,6 @@
 
     private var masterViewController: UIViewController?
     private var detailViewController: UIViewController?
-    private var showDisplayModeButton: Bool = true
 
     private var detailContent: (() -> AnyView)? {
       guard let activeDetailRoute = activeDetailRoute else { return nil }
@@ -29,7 +28,6 @@
       activeDetailRoute: String?,
       waypoint: Waypoint,
       isCollapsed: Bool,
-      splitNavigationOptions: Set<SplitNavigationOption>,
       masterContent: MasterContent
     ) {
       self.store = store
@@ -38,7 +36,6 @@
       self.waypoint = waypoint
       self.isCollapsed = isCollapsed
       super.init()
-      self.updateOptions(splitNavigationOptions)
       self.setMasterContent(masterContent)
     }
 
@@ -50,41 +47,32 @@
       }
     }
 
-    func updateOptions(_ options: Set<SplitNavigationOption>) {
-      options.forEach { option in
-        switch option {
-        case .showDisplayModeButton(let enabled):
-          self.showDisplayModeButton = enabled
-        case .preferredDisplayMode(let displayMode):
-          self.splitViewController?.preferredDisplayMode = displayMode
-        case .preferredPrimaryColumnWidthFraction(let value):
-          self.splitViewController?.preferredPrimaryColumnWidthFraction = value
-        case .presentsWithGesture(let enabled):
-          self.splitViewController?.presentsWithGesture = enabled
-        case .primaryEdge(let primaryEdge):
-          self.splitViewController?.primaryEdge = primaryEdge
-        case .primaryBackgroundStyle(let backgroundStyle):
-          self.splitViewController?.primaryBackgroundStyle = backgroundStyle
-        }
-      }
+    func updateOptions(options: SplitNavigationOptions) {
+      self.splitViewController?.preferredDisplayMode = options.preferredDisplayMode
+      self.splitViewController?.preferredPrimaryColumnWidthFraction = options.preferredPrimaryColumnWidthFraction
+      self.splitViewController?.presentsWithGesture = options.presentsWithGesture
+      self.splitViewController?.primaryEdge = options.primaryEdge
+      self.splitViewController?.primaryBackgroundStyle = options.primaryBackgroundStyle
     }
 
     private func updateMasterContent(masterContent: MasterContent) {
-      let id = waypoint.path + "@split-navigation-master"
+      let masterContent = masterContent.onPreferenceChange(SplitNavigationPreferenceKey.self) { [weak self] in
+        self?.updateOptions(options: $0)
+      }
       let detailContent = self.detailContent
       let masterView = StackNavigationView {
         if isCollapsed && detailContent != nil && activeDetailRoute != "/" {
           masterContent.stackRoute {
-            detailContent.map { $0() }
+            detailContent?()
           }
           .resetRoute(with: "/", isDetail: true)
         } else {
           masterContent
         }
       }
-      .id(id)
+      .id(waypoint.path + "@split-navigation-master")
       .provideStore(self.store)
-      
+
       updateMasterViewController(content: masterView)
     }
 
@@ -102,11 +90,9 @@
       let id = waypoint.path + "@split-navigation-detail"
       let detailContent = !isCollapsed ? self.detailContent : nil
       let detailView = StackNavigationView {
-        detailContent.map { $0() }.stackNavigationReplaceRoot(true)
+        detailContent?()
       }
       .id(id)
-      .environment((\.waypoint), Waypoint(sceneName: self.waypoint.sceneName, isDetail: true))
-      .environment(\.splitNavigationDisplayModeButton, showDisplayModeButton ? splitViewController?.displayModeButtonItem : nil)
       .provideStore(self.store)
 
       updateDetailViewController(content: detailView)
