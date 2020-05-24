@@ -2,7 +2,10 @@ import SwiftDux
 import SwiftUI
 
 /// A tab view that navigates using  routes.
-public struct TabNavigationView<Content, T>: RouteReaderView where Content: View, T: LosslessStringConvertible & Hashable {
+public struct TabNavigationView<Content, T>: WaypointResolverView where Content: View, T: LosslessStringConvertible & Hashable {
+  public static var hasPathParameter: Bool { true }
+  public var defaultPathParameter: String? { String(initialTab) }
+
   @MappedDispatch() private var dispatch
 
   private var content: Content
@@ -18,27 +21,34 @@ public struct TabNavigationView<Content, T>: RouteReaderView where Content: View
     self.initialTab = initialTab
   }
 
-  public func body(routeInfo: RouteInfo) -> some View {
-    let pathParameter = createPathParameterBinding(waypoint: routeInfo.waypoint, pathParameter: routeInfo.pathParameter)
-    return TabView(selection: pathParameter) { content }
-      .nextWaypoint(with: String(pathParameter.wrappedValue))
-      .onAppear {
-        if routeInfo.path == routeInfo.waypoint.path {
-          self.dispatch(routeInfo.waypoint.navigate(to: String(pathParameter.wrappedValue), animate: false))
-        }
-        self.dispatch(routeInfo.waypoint.beginCaching())
-      }
+  public func body(info: ResolvedWaypointInfo) -> some View {
+    TabView(selection: selection(with: info.waypoint, pathParameter: info.pathParameter(as: T.self) ?? initialTab)) {
+      content.waypoint(with: info.nextWaypoint)
+    }
+    .onAppear { self.dispatch(info.waypoint.beginCaching()) }
   }
 
-  private func createPathParameterBinding(waypoint: Waypoint, pathParameter: String?) -> Binding<T> {
-    let pathParameter = pathParameter.flatMap { T($0) } ?? initialTab
-    return Binding(
+  private func selection(with waypoint: Waypoint, pathParameter: T) -> Binding<T> {
+    Binding(
       get: { pathParameter },
       set: {
-        let nextPathParam = String($0)
-        self.dispatch(waypoint.navigate(to: String(nextPathParam)))
+        self.dispatch(waypoint.navigate(to: $0, animate: false))
         self.dispatch(waypoint.completeNavigation())
       }
     )
+  }
+}
+
+extension View {
+
+  /// Add a new tab item by name.
+  ///
+  /// This is a convenience method that combines the regular tabItem view modifier with the tag view modifier.
+  /// - Parameters:
+  ///   - name: The name of the tab.
+  ///   - content: The contents of the tab item.
+  /// - Returns: The view.
+  public func tabItem<Content>(_ name: String, @ViewBuilder content: () -> Content) -> some View where Content: View {
+    self.tabItem(content).tag(name)
   }
 }

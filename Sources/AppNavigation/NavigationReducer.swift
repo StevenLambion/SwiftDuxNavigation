@@ -63,7 +63,7 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
   )
     -> State
   {
-    updateScene(in: state, named: sceneName) { scene in
+    updateScene(in: state, named: sceneName, animate: animate) { scene in
       var route = isDetail ? scene.detailRoute : scene.route
       updater(&route, &scene)
       if isDetail {

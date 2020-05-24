@@ -9,12 +9,16 @@ public struct RouteReader<Content>: ConnectableView where Content: View {
   @Environment(\.waypoint) private var waypoint
   @MappedDispatch() private var dispatch
 
+  private var isDetail: Bool?
   private var content: (RouteInfo) -> Content
 
   /// Initiate a new RouteReader.
   ///
-  /// - Parameter content: The contents of the route.
-  public init(content: @escaping (RouteInfo) -> Content) {
+  /// - Parameters:
+  ///   - isDetail: Read  from the detail route.
+  ///   - content: The contents of the route.
+  public init(isDetail: Bool? = nil, content: @escaping (RouteInfo) -> Content) {
+    self.isDetail = isDetail
     self.content = content
   }
 
@@ -22,39 +26,30 @@ public struct RouteReader<Content>: ConnectableView where Content: View {
     var route: NavigationState.Route
     var path: String?
     var completed: Bool
-    var shouldComplete: Bool
     var animate: Bool
-
-    public static func == (lhs: Props, rhs: Props) -> Bool {
-      lhs.completed == rhs.completed && lhs.path == rhs.path && lhs.shouldComplete == rhs.shouldComplete
-    }
   }
 
   public func map(state: NavigationStateRoot) -> Props? {
     guard let scene = waypoint.resolveSceneState(in: state) else { return nil }
-    guard let route = waypoint.resolveState(in: state) else { return nil }
+    let route = isDetail ?? waypoint.isDetail ? scene.detailRoute : scene.route
     return Props(
       route: route,
       path: route.legsByPath[waypoint.path]?.path,
       completed: route.completed,
-      shouldComplete: waypoint.shouldComplete(for: route),
       animate: scene.animate
     )
   }
 
   public func body(props: Props) -> some View {
     let leg = props.route.legsByPath[waypoint.path]
-    if props.shouldComplete {
-      self.dispatch(self.waypoint.completeNavigation())
-    }
     return content(
       RouteInfo(
         waypoint: waypoint,
-        pathParameter: leg?.component,
-        path: props.route.path,
-        isLastWaypoint: leg?.path == props.route.path,
+        fullPath: props.route.path,
+        legs: props.route.legsByPath,
         completed: props.route.completed,
-        animate: props.animate
+        animate: props.animate,
+        active: leg != nil || waypoint.path == props.route.path
       )
     )
   }
@@ -65,25 +60,58 @@ public struct RouteInfo {
   /// The waypoint of the view.
   public var waypoint: Waypoint
 
-  /// The current path parameter of the waypoint if it's active.
-  public var pathParameter: String?
-
   /// The full path of the current route.
-  public var path: String
+  public var fullPath: String
 
-  /// If the waypoint is the final destination.
-  public var isLastWaypoint: Bool
+  public var legs: [String: NavigationState.RouteLeg]
 
   /// If the routing has completed.
   public var completed: Bool
 
   /// If the routing is animating.
   public var animate: Bool
+
+  /// If the routing is active.
+  public var active: Bool
+
+  /// The current component of the waypoint if it's active.
+  public var path: String {
+    waypoint.path
+  }
+
+  public var isLastLeg: Bool {
+    nextPath == fullPath
+  }
+
+  /// The current component of the waypoint if it's active.
+  public var nextPath: String? {
+    legs[path]?.path
+  }
+
+  /// The current component of the waypoint if it's active.
+  public var component: String? {
+    legs[path]?.component
+  }
+
+  /// The current component of the waypoint if it's active.
+  public var nextComponent: String? {
+    guard let nextPath = nextPath else { return nil }
+    return legs[nextPath]?.component
+  }
+
+  func component<T>(as type: T.Type) -> T? where T: LosslessStringConvertible {
+    component.flatMap { T($0) }
+  }
+
+  func nextComponent<T>(as type: T.Type) -> T? where T: LosslessStringConvertible {
+    nextComponent.flatMap { T($0) }
+  }
 }
 
 /// Convenience for views that rely on routing information.
 public protocol RouteReaderView: View {
   associatedtype Content: View
+  var isDetail: Bool? { get }
 
   /// The body of the view.
   /// - Parameter routeInfo: The current routing information.
@@ -92,15 +120,17 @@ public protocol RouteReaderView: View {
 }
 
 extension RouteReaderView {
+  public var isDetail: Bool? { nil }
 
   public var body: RouteReader<Content> {
-    RouteReader(content: body)
+    RouteReader(isDetail: isDetail, content: body)
   }
 }
 
 /// Convenience for view modifiers that rely on routing information.
 public protocol RouteReaderViewModifier: ViewModifier {
   associatedtype RouteReaderContent: View
+  var isDetail: Bool? { get }
 
   /// The body of the view.
   /// - Parameters:
@@ -111,8 +141,9 @@ public protocol RouteReaderViewModifier: ViewModifier {
 }
 
 extension RouteReaderViewModifier {
+  public var isDetail: Bool? { nil }
 
   public func body(content: Content) -> RouteReader<RouteReaderContent> {
-    RouteReader { self.body(content: content, routeInfo: $0) }
+    RouteReader(isDetail: isDetail) { self.body(content: content, routeInfo: $0) }
   }
 }

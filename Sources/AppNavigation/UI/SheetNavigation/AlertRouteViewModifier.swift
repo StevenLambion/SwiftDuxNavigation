@@ -3,37 +3,31 @@ import SwiftUI
 
 @available(iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 @available(OSX, unavailable)
-internal struct AlertRouteViewModifier: RouteReaderViewModifier {
+internal struct AlertRouteViewModifier: WaypointResolverViewModifier {
   @MappedDispatch() private var dispatch
 
-  var name: String
+  var name: String?
   var alert: Alert
 
-  init(name: String, alert: Alert) {
-    self.name = name
-    self.alert = alert
-  }
-
-  public func body(content: Content, routeInfo: RouteInfo) -> some View {
-    let isActive = routeInfo.pathParameter == name
-    let binding = Binding(
-      get: { isActive },
-      set: {
-        if !$0 {
-          self.dispatch(routeInfo.waypoint.navigate(to: routeInfo.waypoint.path))
-        }
-      }
-    )
-    return
-      content
-      .nextWaypoint(with: isActive ? name : nil)
-      .alert(isPresented: binding) { alert }
+  func body(content: Content, info: ResolvedWaypointInfo) -> some View {
+    content
+      .waypoint(with: info.animate ? info.nextWaypoint : nil)
+      .alert(
+        isPresented: Binding(
+          get: { info.active },
+          set: {
+            guard !$0 else { return }
+            self.dispatch(info.waypoint.navigate(to: ".."))
+          }
+        ),
+        content: { alert }
+      )
   }
 }
 
 extension View {
 
-  /// Create a route that displays an alert.
+  /// Create a waypoint that displays an alert.
   ///
   /// - Parameters:
   ///   - name: The name of the route
@@ -41,7 +35,7 @@ extension View {
   /// - Returns: A view.
   @available(iOS 13.0, tvOS 13.0, watchOS 6.0, *)
   @available(OSX, unavailable)
-  public func alertRoute(_ name: String, content: () -> Alert) -> some View {
+  public func alert(_ name: String, content: () -> Alert) -> some View {
     self.modifier(AlertRouteViewModifier(name: name, alert: content()))
   }
 }

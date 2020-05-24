@@ -12,7 +12,7 @@ public enum NavigationAction: Action {
   case setError(NavigationError, message: String)
 
   /// Remove a scene from state  by name.
-  case clearScene(named: String)
+  case clearScene(String)
 
   /// Begin routing to a new path.
   case beginRouting(path: String, scene: String, isDetail: Bool, animate: Bool)
@@ -186,7 +186,7 @@ extension NavigationAction {
         receiveCompletion: { completion in
           defer { completed() }
           if case .failure(let error) = completion {
-            store.send(self.setError(error, message: "Route completion timed out."))
+            store.send(self.setError(error, message: "Route completion timed out for: '\(getRoute(store)?.path ?? "")'"))
             store.send(NavigationAction.completeRouting(scene: sceneName, isDetail: isDetail))
           }
         },

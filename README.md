@@ -34,15 +34,19 @@ It also provide a small set of primitive navigational views out-of-the-box, but 
   - Automatically saves and restores tab routes.
 
 ## Modals
-- `View.sheetRoute(_:content:)` - Displays a route as a custom sheet.
-- `View.actionSheetRoute(_:content:)` - Displays a route as an action sheet.
-- `View.alertRoute(_:content:)` - Displays a route as an alert.
+- `View.sheet(_:content:)` - Displays a sheet by name.
+- `View.actionSheet(_:content:)` - Displays an action sheet by name.
+- `View.alert(_:content:)` - Displays a an alert by name.
+
+## Extendability
+
+- `RouteReader` - Reads information about the current route and waypoint.
+- `WaypointResolver` - Resolves and manages a waypoint for a custom navigational view.
 
 ## Environment Values
 - `waypoint` - Get information about the current waypoint relative to the view.
 
 ## Getting started
-
 
 1. Add navigation support to the application state by adhering to the `NavigationStateRoot` protocol.
     ```swift
@@ -64,15 +68,15 @@ It also provide a small set of primitive navigational views out-of-the-box, but 
 1. Optionally, specify the current scene when creating a new window or UIScene. By default, the routing uses a "main" scene to conduct navigation.
     ```swift
       UIHostingController(
-        rootView: SecondaryView().scene(named: session.persistentIdentifier)
+        rootView: SecondaryView().scene(session.persistentIdentifier)
       )
     ```
-    Clean up any old scenes by dispatching `NavigationAction.clearScene(named:)`.
+    Clean up any old scenes by dispatching `NavigationAction.clearScene(_:)`.
     ```swift
     // Inside the AppDelegate
     func application(_ application: UIApplication, didDiscardSceneSessions sceneSessions: Set<UISceneSession>) {
       sceneSessions.forEach { session in
-        store.dispatch(NavigationAction.clearScene(named: sceneSessions.persistentIdentifier))
+        store.dispatch(NavigationAction.clearScene(sceneSessions.persistentIdentifier))
       }
     }
     ```
@@ -153,19 +157,19 @@ dispatch(NavigationAction.navigate(to: "..", inScene: "main"))
 ```
 
 ### Route precedence
-The precedence of an active route is based on its position in the view hierarchy. In cases where two or more routes share the same parent route, the higher-level route will be chosen. In the following example, the alert route will take precedence over the stack route when the relevant route is set to "display-alert". Any other value will active the stack route instead.
+The precedence of an active route path is based on its position in the view hierarchy. In cases where two or more routes share the same parent route, the higher-level route will be chosen. In the following example, the route that displays an alert will take precedence over the stack route when the relevant route path is set to "display-alert". Because the stack item takes a dynamic path parameter, any other value will active it instead.
 ```swift
 List {
   ...
 }
-.stackRoute { id in
+.stackItem { id in
   NoteView(id: id)
 }
-.alertRoute("display-alert") { Alert(title: Text("Hello world!")) }
+.alert("display-alert") { Alert(title: Text("Hello world!")) }
 ```
 
 ## Stack navigation
-Create a new `StackNavigationView` to display the app's navigation as a stack. The `View.stackRoute()` methods create the next item in the stack. Think of them as a UIViewController in a UINavigationController. The view inside the route is a branch, and a route may contain one or more of them. In the example, a new route is created with a single branch that displays the `ItemDetails(id:)` view.
+Create a new `StackNavigationView` to display the app's navigation as a stack. The `View.stackItem(_:content:)` methods create the next item in the stack. Think of them as a UIViewController in a UINavigationController.
 
 When a user taps the `RouteLink`, it will navigate to the route with the `ItemDetails(id:)`. The id type can be anything that is convertible from a `String` such as an `Int`. The library automatically converts path parameters to match the type required by the route.
 
@@ -178,9 +182,7 @@ StackNavigationView {
       }
     }
   }
-  .navigationBarTitle(Text("Items"), displayMode: .large)
-  .hideNavigationBar(onSwipe: true)
-  .stackRoute { id in
+  .stackItem { id in
     ItemDetails(id: id)
   }
 }
@@ -191,10 +193,14 @@ To add multiple branches to a route, use the `View.branch(_:isDefault:)` method.
 ```swift
 StackNavigationView {
   AppSectionList()
-    .stackRoute {
-      CompanyDetails().branch("company", isDefault: true)
-      ContactDetails().branch("contact")
-      Settings().branch("settings")
+    .stackItem("company") {
+      CompanyDetails()
+    }
+    .stackItem("contact") {
+      ContactDetails()
+    }
+    .stackItem("settings") {
+      Settings()
     }
 }
 
@@ -205,7 +211,7 @@ RouteLink(path: "/settings") {
 ```
 
 ### Dynamic branching
-Dynamic routes pass their last path component to its branches as a path parameter. In some cases, this may lead to two or more consecutive dynamic routes that form a path made up entirely of path parameters. To resolve this, specify branch names on the dynamic routes.
+Dynamic stack items pass their last path component to their contents as a path parameter. Like static stack items, they may have an optional name.
 
 ```swift
 StackNavigationView {
@@ -215,9 +221,15 @@ StackNavigationView {
         PersonRow(item)
       }
     }
-  }.stackRoute { id in
-    CompanyDetails(id: id).branch("companies", isDefault: true)
-    ContactDetails(id: id).branch("contact")
+  }
+  .stackItem { id in
+    Overview(id: id)
+  }
+  .stackItem("contact") { id in
+    ContactDetails(id: id)
+  }
+  .stackItem("companies") { id in
+    CompanyDetails(id: id)
   }
 }
 
@@ -234,11 +246,11 @@ The SplitNavigationView uses UISplitViewController on iOS to display a master-de
 SplitNavigationView {
   NoteListContainer()
 }
-.detailRoute {
+.detailItem {
   // Optional route when no detail view is displayed
   PlaceholderNote()
 }
-.detailRoute("notes") { noteId in
+.detailItem("notes") { noteId in
   NoteEditorContainer(id: noteId)
 }
 .splitNavigationPreferredDisplayMode(.allVisible)
@@ -254,16 +266,20 @@ RouteLink(path: "notes/\(note.id)", isDetail: true) {
 The `TabNavigationView` presents a navigational tab view. It uses the same `View.tabItem` API of the regular TabView. Underneath the hood, each tab is tied to a specific route by name.
 
 ```swift
+
 TabNavigationView(initialTab: "allMusic") {
-  AllMusicContainer()
-    .tabItem { Text("All Music") }
-    .tag("allMusic")
-  AlbumsContainer()
-    .tabItem { Text("Albums") }
-    .tag("albums")
-  PlaylistsContainer()
-    .tabItem { Text("Playlists") }
-    .tag("playlists")
+  AllMusicContainer().tabItem("allMusic") {
+    Image(systemName: "music.note")
+    Text("All Music")
+  }
+  AlbumsContainer().tabItem("albums") {
+    Image(systemName: "rectangle.stack")
+    Text("Albums")
+  }
+  PlaylistsContainer("Aw, no playists.").tabItem("playlists") {
+    Image(systemName: "music.note.list")
+    Text("Playlists")
+  }
 }
 ```
 
