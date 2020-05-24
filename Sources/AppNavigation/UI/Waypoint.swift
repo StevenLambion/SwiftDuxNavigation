@@ -15,9 +15,6 @@ public struct Waypoint: Equatable {
   ///Is the waypoint in the detial route.
   public var isDetail: Bool = false
 
-  /// Is the waypoint a branch of its parent waypoint.
-  public var isBranch: Bool = false
-
   // Is the waypoint the root of the route.
   public var isRoot: Bool {
     path == "/"
@@ -44,16 +41,13 @@ public struct Waypoint: Equatable {
 
   /// Get the next RouteInfo object for the provided component.
   ///
-  /// - Parameters:
-  ///   - component: The next component
-  ///   - isBranch: Indicates if the next route is a branch of a route.
+  /// - Parameter component: The next component.
   /// - Returns: A new `RouteInfo`
-  public func next<T>(with component: T, isBranch: Bool = false) -> Waypoint where T: LosslessStringConvertible {
-    Waypoint(
+  public func next<T>(with component: T) -> Waypoint where T: LosslessStringConvertible {
+    return Waypoint(
       sceneName: sceneName,
       path: "\(path)\(component)/",
-      isDetail: isDetail,
-      isBranch: isBranch
+      isDetail: isDetail
     )
   }
 
@@ -65,9 +59,10 @@ public struct Waypoint: Equatable {
   ///   - isDetailOverride: Navigate in the detail route.
   ///   - animate: Animate the anvigation.
   /// - Returns: A navigation action.
-  public func navigate(to path: String, inScene scene: String? = nil, isDetail isDetailOverride: Bool? = nil, animate: Bool = true)
-    -> ActionPlan<NavigationStateRoot>
+  public func navigate<T>(to path: T, inScene scene: String? = nil, isDetail isDetailOverride: Bool? = nil, animate: Bool = true)
+    -> ActionPlan<NavigationStateRoot> where T: LosslessStringConvertible
   {
+    let path = String(path)
     let isDetailForPath = isDetailOverride ?? self.isDetail
     guard let absolutePath = standardizedPath(forPath: path, notRelative: isDetailForPath != isDetail) else {
       return ActionPlan { _ in }
@@ -136,7 +131,7 @@ public struct Waypoint: Equatable {
   }
 }
 
-public final class CurrentRouteKey: EnvironmentKey {
+internal final class WaypointKey: EnvironmentKey {
   public static var defaultValue = Waypoint(sceneName: NavigationState.Scene.defaultName, path: "/")
 }
 
@@ -144,8 +139,8 @@ extension EnvironmentValues {
 
   /// The waypoint of the view.
   public var waypoint: Waypoint {
-    get { self[CurrentRouteKey] }
-    set { self[CurrentRouteKey] = newValue }
+    get { self[WaypointKey] }
+    set { self[WaypointKey] = newValue }
   }
 }
 
@@ -155,7 +150,7 @@ extension View {
   ///
   /// - Parameter name: The name of the scene.
   /// - Returns: The view.
-  public func scene(named name: String) -> some View {
+  public func scene(_ name: String) -> some View {
     self.environment(\.waypoint, Waypoint(sceneName: name, path: "/"))
   }
 
@@ -163,9 +158,9 @@ extension View {
   ///
   /// - Parameter waypoint: Pass a custom waypoint to use.
   /// - Returns: The view
-  public func nextWaypoint(with waypoint: Waypoint) -> some View {
+  public func waypoint(with waypoint: Waypoint?) -> some View {
     self.transformEnvironment(\.waypoint) {
-      var waypoint = waypoint
+      guard var waypoint = waypoint else { return }
       waypoint.sceneName = $0.sceneName
       $0 = waypoint
     }
@@ -173,14 +168,11 @@ extension View {
 
   /// Set the view as the next waypoint.
   ///
-  /// - Parameters:
-  ///   - component: The component, or name, of the waypoint.
-  ///   - isBranch: Indicates the waypoint is a child branch of a parent waypoint.
+  /// - Parameter component: The component, or name, of the waypoint.
   /// - Returns: The view
-  public func nextWaypoint<T>(with component: T?, isBranch: Bool = false) -> some View where T: LosslessStringConvertible {
+  public func waypoint<T>(with component: T) -> some View where T: LosslessStringConvertible {
     self.transformEnvironment(\.waypoint) {
-      guard let component = component else { return }
-      $0 = $0.next(with: component, isBranch: isBranch)
+      $0 = $0.next(with: component)
     }
   }
 

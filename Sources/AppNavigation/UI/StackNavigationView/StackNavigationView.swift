@@ -4,9 +4,7 @@
   import SwiftUI
 
   /// Create a stack-style navigation.
-  public struct StackNavigationView<RootView>: RouteReaderView where RootView: View {
-    @Environment(\.waypoint) private var waypoint
-
+  public struct StackNavigationView<RootView>: WaypointResolverView where RootView: View {
     private var rootView: RootView
 
     /// Initiate a `StackNavigationView` with a root view.
@@ -15,13 +13,14 @@
       self.rootView = rootView()
     }
 
-    public func body(routeInfo: RouteInfo) -> some View {
+    public func body(info: ResolvedWaypointInfo) -> some View {
       NativeStackNavigationView(
-        animate: routeInfo.animate,
+        animate: info.animate,
         rootView: rootView
       )
-      .opacity(!routeInfo.animate && !routeInfo.completed ? 0 : 1)
+      .opacity(!info.animate && !info.completed ? 0 : 1)
       .edgesIgnoringSafeArea(.all)
+      .waypoint(with: info.nextWaypoint)
     }
   }
 

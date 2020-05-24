@@ -5,12 +5,10 @@
 
   internal struct NativeSplitNavigationView<MasterContent>: UIViewControllerRepresentable
   where MasterContent: View {
-    @Environment(\.detailRoutes) private var detailRoutes
+    @Environment(\.rootDetailWaypointContent) private var rootDetailWaypointContent
     @Environment(\.waypoint) private var waypoint
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
-    var activeDetailRoute: String?
-    var animate: Bool
     var masterContent: MasterContent
 
     func makeUIViewController(context: Context) -> UISplitViewController {
@@ -28,17 +26,15 @@
     ) {}
 
     func updateUIViewController(_ uiViewController: UISplitViewController, context: Context) {
-      context.coordinator.detailRoutes = detailRoutes
+      context.coordinator.rootDetailWaypointContent = rootDetailWaypointContent
       context.coordinator.waypoint = waypoint
       context.coordinator.isCollapsed = horizontalSizeClass == .compact
-      context.coordinator.activeDetailRoute = activeDetailRoute
       context.coordinator.setMasterContent(masterContent)
     }
 
     func makeCoordinator() -> NativeSplitNavigationViewCoordinator<MasterContent> {
       return NativeSplitNavigationViewCoordinator<MasterContent>(
-        detailRoutes: detailRoutes,
-        activeDetailRoute: activeDetailRoute,
+        rootDetailWaypointContent: rootDetailWaypointContent,
         waypoint: waypoint,
         isCollapsed: horizontalSizeClass == .compact,
         masterContent: masterContent

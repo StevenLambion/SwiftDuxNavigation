@@ -3,35 +3,28 @@
   import SwiftDux
   import SwiftUI
 
-  internal struct StackRoute: Equatable {
+  internal struct StackItem: Equatable {
     var path: String
-    var fromBranch: Bool = false
     var viewController: UIViewController
 
-    init(path: String, fromBranch: Bool = false, viewController: UIViewController) {
+    init(path: String, viewController: UIViewController) {
       self.path = path
-      self.fromBranch = fromBranch
       self.viewController = viewController
     }
 
     init<V>(path: String, fromBranch: Bool = false, view: V) where V: View {
       self.init(
         path: path,
-        fromBranch: fromBranch,
         viewController: UIHostingController(rootView: view)
       )
     }
 
-    static func == (lhs: StackRoute, rhs: StackRoute) -> Bool {
+    static func == (lhs: StackItem, rhs: StackItem) -> Bool {
       lhs.path == rhs.path
     }
   }
 
   internal final class StackNavigationCoordinator: NSObject {
-    var waypoint: Waypoint
-    var animate: Bool
-
-    var rootViewController: UIViewController?
     weak var navigationController: UINavigationController? {
       willSet {
         navigationController?.delegate = nil
@@ -46,8 +39,19 @@
       }
     }
 
+    var waypoint: Waypoint
+    var detailContent: RootDetailWaypointContent?
+    var animate: Bool
+
+    private var rootViewController: UIViewController?
+    private var rootDetailViewController: UIViewController?
+
+    private var options: StackNavigationOptions = StackNavigationOptions()
+    private var detailOptions: StackNavigationOptions = StackNavigationOptions()
+
     private var dispatch: ActionDispatcher
-    private var routes: StackRouteStorage = StackRouteStorage()
+    private var stackItems: [StackItem] = []
+    private var detailStackItems: [StackItem] = []
     private var viewControllersByPath: [String: UIViewController] = [:]
     private var replaceRoot: Bool = false {
       didSet {
@@ -69,6 +73,7 @@
     init<Content>(
       dispatch: ActionDispatcher,
       waypoint: Waypoint,
+      detailContent: AnyView?,
       animate: Bool,
       rootView: Content
     ) where Content: View {
@@ -76,45 +81,69 @@
       self.waypoint = waypoint
       self.animate = animate
       super.init()
-      setRootView(rootView: rootView)
+      setRootView(rootView: rootView, isDetail: false)
+      setRootView(rootView: detailContent, isDetail: true)
     }
 
-    func setRootView<Content>(rootView: Content) where Content: View {
+    func setRootView<Content>(rootView: Content?, isDetail: Bool) where Content: View {
+      guard rootView != nil else {
+        if isDetail {
+          rootDetailViewController = nil
+        }
+        return
+      }
       self.setRootViewInternal(
-        rootView:
-          rootView
+        rootView: (rootView
           .onPreferenceChange(StackNavigationPreferenceKey.self) { [weak self] in
-            self?.updateOptions($0)
+            if isDetail {
+              self?.detailOptions = $0
+            } else {
+              self?.options = $0
+            }
           }
-          .onPreferenceChange(StackRoutePreferenceKey.self) { [weak self] in
-            self?.updateRoutes($0)
+          .onPreferenceChange(StackItemPreferenceKey.self) { [weak self] in
+            self?.updateStackItems($0, isDetail: isDetail)
           }
           // Don't let parent navigation views use the routes.
-          .stackRoutePreference(StackRouteStorage())
+          .preference(key: StackItemPreferenceKey.self, value: [])
+          .clearDetailItem()),
+        isDetail: isDetail
       )
     }
 
-    private func setRootViewInternal<V>(rootView: V) where V: View {
-      guard let rootViewController = rootViewController as? UIHostingController<V> else {
-        return self.rootViewController = UIHostingController<V>(rootView: rootView)
+    private func setRootViewInternal<V>(rootView: V, isDetail: Bool) where V: View {
+      var controller = isDetail ? rootDetailViewController : rootViewController
+      if let controller = controller as? UIHostingController<V> {
+        controller.rootView = rootView
+      } else {
+        controller = UIHostingController<V>(rootView: rootView)
       }
-      rootViewController.rootView = rootView
+      if isDetail {
+        rootDetailViewController = controller
+      } else {
+        rootViewController = controller
+      }
     }
 
-    private func updateRoutes(_ newRoutes: StackRouteStorage) {
-      guard self.routes != newRoutes else { return }
-      let newRoutesByPath = Set(newRoutes.all.map(\.path))
-      routes.all.forEach {
-        if !newRoutesByPath.contains($0.path) {
+    private func updateStackItems(_ newStackItems: [StackItem], isDetail: Bool) {
+      let stackItems = isDetail ? self.detailStackItems : self.stackItems
+      guard stackItems != newStackItems else { return }
+      let newStackItemByPath = Set(newStackItems.map(\.path))
+      stackItems.forEach {
+        if !newStackItemByPath.contains($0.path) {
           viewControllersByPath.removeValue(forKey: $0.path)
         }
       }
-      newRoutes.all.forEach {
+      newStackItems.forEach {
         if viewControllersByPath[$0.path] == nil {
           viewControllersByPath[$0.path] = $0.viewController
         }
       }
-      self.routes = newRoutes
+      if isDetail {
+        self.detailStackItems = newStackItems
+      } else {
+        self.stackItems = newStackItems
+      }
       updateNavigation()
     }
 
@@ -129,12 +158,23 @@
       self.showSplitViewDisplayModeButton = options.showSplitViewDisplayModeButton
     }
 
-    private func updateNavigation() {
+    func updateNavigation() {
       guard let rootViewController = rootViewController else { return }
-      var viewControllers: [UIViewController] = routes.all.compactMap { self.viewControllersByPath[$0.path] }
+      var viewControllers: [UIViewController] = stackItems.compactMap { self.viewControllersByPath[$0.path] }
+
+      self.updateOptions(options)
+      if let rootDetailViewController = rootDetailViewController {
+        viewControllers.append(rootDetailViewController)
+        viewControllers.append(contentsOf: detailStackItems.compactMap { self.viewControllersByPath[$0.path] })
+        self.updateOptions(detailOptions)
+      }
 
       if viewControllers.count == 0 || !replaceRoot {
         viewControllers.insert(rootViewController, at: 0)
+      }
+
+      if navigationController?.viewControllers == viewControllers {
+        return
       }
 
       let animate = viewControllers.count > 1 && self.animate
@@ -163,16 +203,14 @@
     /// of UIHostingView crashes if it's called
     /// - Parameter viewController: The view controller.
     private func prerenderViewController(viewController: UIViewController) {
-      guard viewController.navigationController == nil else { return }
-      guard viewController.splitViewController == nil else { return }
       if viewController.parent == nil {
         navigationController?.addChild(viewController)
         navigationController?.view.addSubview(viewController.view)
-        viewController.view.layoutIfNeeded()
+        viewController.view.layoutSubviews()
         viewController.view.removeFromSuperview()
         viewController.removeFromParent()
       } else {
-        viewController.view.layoutIfNeeded()
+        viewController.view.layoutSubviews()
       }
     }
   }
@@ -180,6 +218,7 @@
   extension StackNavigationCoordinator: UINavigationControllerDelegate {
 
     func navigationController(_ navigationController: UINavigationController, willShow viewController: UIViewController, animated: Bool) {
+      prerenderViewController(viewController: viewController)
       updateSplitNavigationDisplayModeButton()
     }
 
@@ -188,20 +227,20 @@
         if !viewControllersByPath.isEmpty {
           dispatch(waypoint.navigate(to: waypoint.path, animate: false))
           dispatch(waypoint.completeNavigation())
+          viewControllersByPath = [:]
         }
-        if !waypoint.isDetail && !routes.detail.isEmpty {
+        if !waypoint.isDetail && rootDetailViewController != nil {
           dispatch(waypoint.navigate(to: "/", isDetail: true, animate: false))
           dispatch(waypoint.completeNavigation(isDetail: true))
         }
-        viewControllersByPath = [:]
         return
       }
       guard let vcIndex = viewControllersByPath.firstIndex(where: { key, vc in vc == viewController })
       else { return }
       let path = viewControllersByPath.keys[vcIndex]
-      if let route = routes.all.last {
-        if route.path != path {
-          dispatch(waypoint.pop(to: path, isDetail: !routes.detail.isEmpty, preserveBranch: route.fromBranch, animate: false))
+      if let stackItem = (stackItems + detailStackItems).last {
+        if stackItem.path != path {
+          dispatch(waypoint.navigate(to: path, isDetail: !detailStackItems.isEmpty, animate: false))
           dispatch(waypoint.completeNavigation())
         }
       }
