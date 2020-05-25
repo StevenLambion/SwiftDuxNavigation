@@ -17,9 +17,6 @@ public enum NavigationAction: Action {
   /// Begin routing to a new path.
   case beginRouting(path: String, scene: String, isDetail: Bool, animate: Bool)
 
-  /// Begin popping the navigation to an ancestor path.
-  case beginPop(path: String, scene: String, isDetail: Bool, preserveBranch: Bool, animate: Bool)
-
   /// Complete the navigation routing.
   case completeRouting(scene: String, isDetail: Bool)
 
@@ -63,37 +60,6 @@ extension NavigationAction {
           animate: animate
         )
       )
-      return waitForRouteCompeletion(forStore: store, inScene: scene, isDetail: isDetail, completed: completed)
-    }
-  }
-
-  /// Navigate to an ancestor path.
-  ///
-  /// If the path is of a target route, it will perserve its active branch.
-  /// - Parameters:
-  ///   - path: The path to navigate to. It can be an absolute or relative path.
-  ///   - scene: The scene to navigate.
-  ///   - isDetail: Applies to the detail route.
-  ///   - preserveBranch: If the route has an active branch, preserve it
-  ///   - animate: Animate the navigational transition.
-  /// - Returns: The navigation action.
-  public static func pop(
-    to path: String,
-    inScene scene: String = NavigationState.Scene.defaultName,
-    isDetail: Bool,
-    preserveBranch: Bool = false,
-    animate: Bool = true
-  ) -> ActionPlan<NavigationStateRoot> {
-    ActionPlan { store, completed in
-      let getRoute = self.routeGetter(forScene: scene, isDetail: isDetail)
-      guard let route = getRoute(store) else {
-        completed()
-        return nil
-      }
-      if !route.completed {
-        store.send(self.completeRouting(scene: scene, isDetail: isDetail))
-      }
-      store.send(NavigationAction.beginPop(path: path, scene: scene, isDetail: isDetail, preserveBranch: preserveBranch, animate: animate))
       return waitForRouteCompeletion(forStore: store, inScene: scene, isDetail: isDetail, completed: completed)
     }
   }

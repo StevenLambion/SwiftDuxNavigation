@@ -16,12 +16,8 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
       state.navigation.lastNavigationError = error
       state.navigation.lastNavigationErrorMessage = message
     case .beginRouting(let path, let sceneName, let isDetail, let animate):
-      state = updateRoute(in: state, forScene: sceneName, isDetail: isDetail, animate: animate) { route, scene in
-        scene.animate = beginRouting(route: &route, path: path)
-      }
-    case .beginPop(let path, let sceneName, let isDetail, let perserveBranch, let animate):
-      state = updateRoute(in: state, forScene: sceneName, isDetail: isDetail, animate: animate) { route, scene in
-        scene.animate = beginPop(route: &route, path: path, perserveBranch: perserveBranch)
+      state = updateRoute(in: state, forScene: sceneName, isDetail: isDetail) { route, scene in
+        beginRouting(route: &route, path: path, animate: animate)
       }
     case .completeRouting(let sceneName, let isDetail):
       state = updateRoute(in: state, forScene: sceneName, isDetail: isDetail) { route, scene in
@@ -41,15 +37,16 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
     return state
   }
 
-  private func updateScene(in state: State, named name: String, animate: Bool = false, updater: (inout NavigationState.Scene) -> Void)
+  private func updateScene(in state: State, named name: String, updater: (inout NavigationState.Scene) -> Void)
     -> State
   {
     var state = state
     var scene = state.navigation.sceneByName[name] ?? NavigationState.Scene(name: name)
     updater(&scene)
     state.navigation.sceneByName[name] = scene
-    if scene.animate && (!animate || !state.navigation.options.animationEnabled) {
-      scene.animate = false
+    if !state.navigation.options.animationEnabled {
+      scene.route.animate = false
+      scene.detailRoute.animate = false
     }
     return state
   }
@@ -58,12 +55,11 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
     in state: State,
     forScene sceneName: String,
     isDetail: Bool,
-    animate: Bool = false,
     updater: (inout NavigationState.Route, inout NavigationState.Scene) -> Void
   )
     -> State
   {
-    updateScene(in: state, named: sceneName, animate: animate) { scene in
+    updateScene(in: state, named: sceneName) { scene in
       var route = isDetail ? scene.detailRoute : scene.route
       updater(&route, &scene)
       if isDetail {
@@ -74,9 +70,9 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
     }
   }
 
-  private func beginRouting(route: inout NavigationState.Route, path: String) -> Bool {
+  private func beginRouting(route: inout NavigationState.Route, path: String, animate: Bool) {
     let url = path.standardizedURL(withBasePath: route.path)
-    guard let absolutePath = url?.absoluteString else { return false }
+    guard let absolutePath = url?.absoluteString else { return }
     let resolvedPath = pathFromCache(route: route, path: absolutePath) ?? absolutePath
     let (segments, orderedLegPaths) = buildRouteSegments(path: resolvedPath)
     route = NavigationState.Route(
@@ -84,10 +80,10 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
       legsByPath: segments,
       orderedLegPaths: orderedLegPaths,
       caches: route.caches,
+      animate: animate && absolutePath == resolvedPath,
       completed: false
     )
     updateCache(route: &route)
-    return absolutePath == resolvedPath
   }
 
   private func buildRouteState(route: NavigationState.Route, absolutePath: String) -> NavigationState.Route {
@@ -119,15 +115,8 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
   }
 
   private func completeRouting(route: inout NavigationState.Route) {
+    route.animate = false
     route.completed = true
-  }
-
-  private func beginPop(route: inout NavigationState.Route, path: String, perserveBranch: Bool) -> Bool {
-    guard let resolvedPath = path.standardizedPath(withBasePath: route.path) else {
-      return false
-    }
-    guard let segment = route.legsByPath[resolvedPath] else { return false }
-    return beginRouting(route: &route, path: perserveBranch ? segment.path : segment.parentPath)
   }
 
   private func beginCaching(route: inout NavigationState.Route, path: String, policy: NavigationState.RouteCachingPolicy) {

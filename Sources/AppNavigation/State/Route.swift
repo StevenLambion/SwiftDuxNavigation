@@ -72,6 +72,9 @@ extension NavigationState {
 
     /// The route caches by their path.
     public var caches: [String: RouteCache]
+    
+    /// The route changes should be animated.
+    public var animate: Bool = false
 
     /// The route changes have completed.
     public var completed: Bool = false
@@ -81,12 +84,14 @@ extension NavigationState {
       legsByPath: [String: RouteLeg] = [:],
       orderedLegPaths: [String] = [],
       caches: [String: RouteCache] = [:],
+      animate: Bool = false,
       completed: Bool = false
     ) {
       self.path = path
       self.legsByPath = legsByPath
       self.orderedLegPaths = orderedLegPaths
       self.caches = caches
+      self.animate = animate
       self.completed = completed
     }
 

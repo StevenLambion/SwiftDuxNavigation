@@ -18,15 +18,19 @@ extension NavigationState {
 
     /// The detail route of a scene.
     public var detailRoute: Route = Route()
+    
+    public var animate: Bool {
+      route.animate || detailRoute.animate
+    }
 
-    /// The route changes should be animated.
-    public var animate: Bool = false
-
-    public init(name: String, route: Route = Route(), detailRoute: Route = Route(), animate: Bool = false) {
+    public init(name: String, route: Route = Route(), detailRoute: Route = Route()) {
       self.name = name
       self.route = route
       self.detailRoute = detailRoute
-      self.animate = animate
+    }
+    
+    public enum CodingKeys: String, CodingKey {
+      case name, route, detailRoute
     }
   }
 }
