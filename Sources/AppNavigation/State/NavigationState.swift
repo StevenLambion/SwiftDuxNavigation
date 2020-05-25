@@ -14,8 +14,8 @@ public struct NavigationState: StateType {
   /// All scenes by their name.
   public var sceneByName: [String: Scene]
 
-  public var lastNavigationError: NavigationError?
-  public var lastNavigationErrorMessage: String?
+  public var lastNavigationError: NavigationError? = nil
+  public var lastNavigationErrorMessage: String? = nil
 
   public init(
     options: Options = Options(),
@@ -29,6 +29,10 @@ public struct NavigationState: StateType {
     self.sceneByName = sceneByName
     self.lastNavigationError = lastNavigationError
     self.lastNavigationErrorMessage = lastNavigationErrorMessage
+  }
+
+  public enum CodingKeys: String, CodingKey {
+    case options, sceneByName
   }
 }
 

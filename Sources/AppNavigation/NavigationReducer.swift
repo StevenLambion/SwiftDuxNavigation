@@ -70,15 +70,22 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
     }
   }
 
+  /// Begin the routing state.
+  ///
+  /// - Parameters:
+  ///   - route: The current route state.
+  ///   - path: The new path.
+  ///   - skipIfAncestor: If it should skip ancestor paths.
+  ///   - animate: Animate the routing.
   private func beginRouting(route: inout NavigationState.Route, path: String, skipIfAncestor: Bool, animate: Bool) {
     let url = path.standardizedURL(withBasePath: route.path)
     guard let absolutePath = url?.absoluteString else { return }
     let resolvedPath = pathFromCache(route: route, path: absolutePath) ?? absolutePath
     guard !skipIfAncestor || !route.path.starts(with: resolvedPath) else { return }
-    let (segments, orderedLegPaths) = buildRouteSegments(path: resolvedPath)
+    let (legs, orderedLegPaths) = buildRouteLegs(path: resolvedPath)
     route = NavigationState.Route(
       path: resolvedPath,
-      legsByPath: segments,
+      legsByPath: legs,
       orderedLegPaths: orderedLegPaths,
       caches: route.caches,
       animate: animate && absolutePath == resolvedPath,
@@ -87,21 +94,11 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
     updateCache(route: &route)
   }
 
-  private func buildRouteState(route: NavigationState.Route, absolutePath: String) -> NavigationState.Route {
-    let resolvedPath = pathFromCache(route: route, path: absolutePath) ?? absolutePath
-    let (segments, orderedLegPaths) = buildRouteSegments(path: resolvedPath)
-    var nextRoute = NavigationState.Route(
-      path: resolvedPath,
-      legsByPath: segments,
-      orderedLegPaths: orderedLegPaths,
-      caches: route.caches,
-      completed: false
-    )
-    updateCache(route: &nextRoute)
-    return nextRoute
-  }
-
-  private func buildRouteSegments(path: String) -> ([String: NavigationState.RouteLeg], [String]) {
+  /// Build the legs of a route.
+  ///
+  /// - Parameter path: The route path.
+  /// - Returns: The next legs.
+  private func buildRouteLegs(path: String) -> ([String: NavigationState.RouteLeg], [String]) {
     let pathComponents = path.split(separator: "/", omittingEmptySubsequences: false)
     var legs = [String: NavigationState.RouteLeg](minimumCapacity: pathComponents.count)
     var orderedLegPaths = [String]()
@@ -115,11 +112,20 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
     return (legs, orderedLegPaths)
   }
 
+  /// Completes the routing state.
+  ///
+  /// - Parameter route: The route to complete.
   private func completeRouting(route: inout NavigationState.Route) {
     route.animate = false
     route.completed = true
   }
 
+  /// Begin caching child routes for a   path.
+  ///
+  /// - Parameters:
+  ///   - route: The current route state.
+  ///   - path: The route path that will cache its children.
+  ///   - policy: The caching policy.
   private func beginCaching(route: inout NavigationState.Route, path: String, policy: NavigationState.RouteCachingPolicy) {
     guard route.caches[path] == nil else { return }
     guard let pathIndex = route.orderedLegPaths.lastIndex(of: path) else { return }
@@ -131,10 +137,20 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
     )
   }
 
+  /// Stop caching child routes for a path.
+  ///
+  /// - Parameters:
+  ///   - route: The current route state.
+  ///   - path: The  path.
   private func stopCaching(route: inout NavigationState.Route, path: String) {
     route.caches.removeValue(forKey: path)
   }
 
+  /// Updates the route state's cache.
+  ///
+  /// It adds a new entry to the cache if the current route state has a matching path. It
+  /// then removes existing entries who's caching policy has expired.
+  /// - Parameter route: The current route state.
   private func updateCache(route: inout NavigationState.Route) {
     var caches = route.caches
     if let cachePath = route.orderedLegPaths.last(where: { caches[$0] != nil }) {
@@ -155,6 +171,12 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
     }
   }
 
+  /// Resolve a route path from the cache if it exists.
+  ///
+  /// - Parameters:
+  ///   - route: The current route state.
+  ///   - path: The route path to resolve from.
+  /// - Returns: The cached path if found.
   private func pathFromCache(route: NavigationState.Route, path: String) -> String? {
     guard !route.path.starts(with: path) else { return path }
     let components = path.components(separatedBy: "/").filter { !$0.isEmpty }

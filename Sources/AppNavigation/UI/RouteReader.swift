@@ -67,6 +67,7 @@ public struct RouteInfo {
   /// The full path of the current route.
   public var fullPath: String
 
+  /// The legs of the route by their parent path.
   public var legs: [String: NavigationState.RouteLeg]
 
   /// If the routing has completed.
@@ -81,10 +82,6 @@ public struct RouteInfo {
   /// The current component of the waypoint if it's active.
   public var path: String {
     waypoint.path
-  }
-
-  public var isLastLeg: Bool {
-    nextPath == fullPath
   }
 
   /// The current component of the waypoint if it's active.
@@ -103,11 +100,17 @@ public struct RouteInfo {
     return legs[nextPath]?.component
   }
 
-  func component<T>(as type: T.Type) -> T? where T: LosslessStringConvertible {
+  /// Resolve the compnent as a specific type.
+  /// - Parameter type: The type of the component.
+  /// - Returns: The resolved component.
+  public func component<T>(as type: T.Type) -> T? where T: LosslessStringConvertible {
     component.flatMap { T($0) }
   }
 
-  func nextComponent<T>(as type: T.Type) -> T? where T: LosslessStringConvertible {
+  /// Resolve the next compnent as a specific type.
+  /// - Parameter type: The type of the component.
+  /// - Returns: The resolved component.
+  public func nextComponent<T>(as type: T.Type) -> T? where T: LosslessStringConvertible {
     nextComponent.flatMap { T($0) }
   }
 }
@@ -118,9 +121,9 @@ public protocol RouteReaderView: View {
   var isDetail: Bool? { get }
 
   /// The body of the view.
-  /// - Parameter routeInfo: The current routing information.
+  /// - Parameter info: The current routing information.
   /// - Returns: The view.
-  func body(routeInfo: RouteInfo) -> Content
+  func body(info: RouteInfo) -> Content
 }
 
 extension RouteReaderView {
@@ -139,15 +142,15 @@ public protocol RouteReaderViewModifier: ViewModifier {
   /// The body of the view.
   /// - Parameters:
   ///   - content: The content to modify.
-  ///   - routeInfo: The current routing information.
+  ///   - info: The current routing information.
   /// - Returns: The view.
-  func body(content: Content, routeInfo: RouteInfo) -> RouteReaderContent
+  func body(content: Content, info: RouteInfo) -> RouteReaderContent
 }
 
 extension RouteReaderViewModifier {
   public var isDetail: Bool? { nil }
 
   public func body(content: Content) -> RouteReader<RouteReaderContent> {
-    RouteReader(isDetail: isDetail) { self.body(content: content, routeInfo: $0) }
+    RouteReader(isDetail: isDetail) { self.body(content: content, info: $0) }
   }
 }

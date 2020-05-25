@@ -37,26 +37,26 @@ public struct WaypointResolver<Content>: RouteReaderView where Content: View {
     self.content = content
   }
 
-  public func body(routeInfo: RouteInfo) -> some View {
-    let pathParameter = resolvePathParameter(from: routeInfo)
-    let waypoint = resolveWaypoint(from: routeInfo)
-    let active = isActive(pathParameter: pathParameter, routeInfo: routeInfo)
-    let redirect = shouldRedirect(pathParameter: pathParameter, routeInfo: routeInfo)
+  public func body(info: RouteInfo) -> some View {
+    let pathParameter = resolvePathParameter(from: info)
+    let waypoint = resolveWaypoint(from: info)
+    let active = isActive(pathParameter: pathParameter, info: info)
+    let redirect = shouldRedirect(pathParameter: pathParameter, info: info)
     let nextWaypoint = pathParameter.map { waypoint.next(with: $0) } ?? waypoint
-    let info = ResolvedWaypointInfo(
+    let resolvedWaypointInfo = ResolvedWaypointInfo(
       waypoint: waypoint,
       nextWaypoint: nextWaypoint,
       pathParameter: pathParameter,
       active: active,
-      animate: routeInfo.animate,
-      completed: routeInfo.completed
+      animate: info.animate,
+      completed: info.completed
     )
     if redirect {
-      dispatch(waypoint.navigate(to: defaultPathParameter!, animate: routeInfo.animate))
-    } else if active && !routeInfo.completed && nextWaypoint.path == routeInfo.fullPath {
+      dispatch(waypoint.navigate(to: defaultPathParameter!, animate: info.animate))
+    } else if active && !info.completed && nextWaypoint.path == info.fullPath {
       dispatch(nextWaypoint.completeNavigation())
     }
-    return content(info).id(waypoint.path)
+    return content(resolvedWaypointInfo).id(waypoint.path)
   }
 
   /// Determine if the waypoint is active baed on its path parameter configuration.
@@ -71,10 +71,10 @@ public struct WaypointResolver<Content>: RouteReaderView where Content: View {
   ///
   /// - Parameters:
   ///   - pathParameter: The current path parameter.
-  ///   - routeInfo: The routing information.
+  ///   - info: The routing information.
   /// - Returns: True if the waypoint is active.
-  private func isActive(pathParameter: String?, routeInfo: RouteInfo) -> Bool {
-    routeInfo.active && (name == nil || routeInfo.component == name) && isPathParameterActive(pathParameter: pathParameter)
+  private func isActive(pathParameter: String?, info: RouteInfo) -> Bool {
+    info.active && (name == nil || info.component == name) && isPathParameterActive(pathParameter: pathParameter)
   }
 
   /// Determine if the waypoint should redirect. This occurs if the waypoint is active, but the route state is missing
@@ -82,32 +82,32 @@ public struct WaypointResolver<Content>: RouteReaderView where Content: View {
   ///
   /// - Parameters:
   ///   - pathParameter: The current path parameter.
-  ///   - routeInfo: The routing information.
+  ///   - info: The routing information.
   /// - Returns: True if it should redirect.
-  private func shouldRedirect(pathParameter: String?, routeInfo: RouteInfo) -> Bool {
-    routeInfo.active && !isPathParameterActive(pathParameter: pathParameter) && defaultPathParameter != nil
+  private func shouldRedirect(pathParameter: String?, info: RouteInfo) -> Bool {
+    info.active && !isPathParameterActive(pathParameter: pathParameter) && defaultPathParameter != nil
   }
 
   // swift-format-ignore: ValidateDocumentationComments
 
   /// Resolves the current path parameter
   ///
-  /// - Parameter routeInfo: The routing information.
+  /// - Parameter info: The routing information.
   /// - Returns: The current path parameter.
-  private func resolvePathParameter(from routeInfo: RouteInfo) -> String? {
+  private func resolvePathParameter(from info: RouteInfo) -> String? {
     guard hasPathParameter else { return nil }
-    return name == nil ? routeInfo.component : routeInfo.nextComponent
+    return name == nil ? info.component : info.nextComponent
   }
 
   /// Resolves the current waypoint for the contents of the resolver.
   ///
-  /// - Parameter routeInfo: The routing information.
+  /// - Parameter info: The routing information.
   /// - Returns: The waypoint.
-  private func resolveWaypoint(from routeInfo: RouteInfo) -> Waypoint {
+  private func resolveWaypoint(from info: RouteInfo) -> Waypoint {
     if let name = name {
-      return routeInfo.waypoint.next(with: name)
+      return info.waypoint.next(with: name)
     }
-    return routeInfo.waypoint
+    return info.waypoint
   }
 }
 
