@@ -29,8 +29,8 @@
     func updateUIViewController(_ uiViewController: UINavigationController, context: Context) {
       context.coordinator.waypoint = waypoint
       context.coordinator.animate = animate
-      context.coordinator.setRootView(rootView: rootView, isDetail: false)
-      context.coordinator.setRootView(rootView: rootDetailWaypointContent?.view, isDetail: true)
+      context.coordinator.setRootView(rootView: rootView)
+      context.coordinator.setRootDetailView(content: rootDetailWaypointContent)
       context.coordinator.updateNavigation()
     }
 
@@ -38,7 +38,7 @@
       return StackNavigationCoordinator(
         dispatch: dispatch,
         waypoint: waypoint,
-        detailContent: rootDetailWaypointContent?.view,
+        detailContent: rootDetailWaypointContent,
         animate: animate,
         rootView: rootView
       )

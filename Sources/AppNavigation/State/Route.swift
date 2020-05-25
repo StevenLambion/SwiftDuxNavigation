@@ -72,7 +72,7 @@ extension NavigationState {
 
     /// The route caches by their path.
     public var caches: [String: RouteCache]
-    
+
     /// The route changes should be animated.
     public var animate: Bool = false
 

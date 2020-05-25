@@ -9,7 +9,6 @@
     var hidesBarsWhenVerticallyCompact: Bool = false
     var hidesBarsWhenKeyboardAppears: Bool = false
     var barTintColor: UIColor? = nil
-    var replaceRoot: Bool = false
     var showSplitViewDisplayModeButton: Bool = false
   }
 
@@ -59,17 +58,6 @@
     public func stackNavigationBarTintColor(_ color: UIColor) -> some View {
       self.stackNavigationPreference {
         $0.barTintColor = color
-      }
-    }
-
-    /// Replace the root view of the StackNavigationView with the first child stack route.
-    ///
-    /// This is useful if the root view is used as a placeholder.
-    /// - Parameter enabled: enable to replace the root view.
-    /// - Returns: The view.
-    public func stackNavigationReplaceRoot(_ enabled: Bool) -> some View {
-      self.stackNavigationPreference {
-        $0.replaceRoot = enabled
       }
     }
 

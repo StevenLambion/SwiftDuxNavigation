@@ -70,29 +70,6 @@ public struct Waypoint: Equatable {
     return NavigationAction.navigate(to: absolutePath, inScene: scene ?? sceneName, isDetail: isDetailForPath, animate: animate)
   }
 
-  /// Pop to a path above the current route if it exists.
-  ///
-  /// - Parameters:
-  ///   - path: The path to navigate to.
-  ///   - scene: The scene to perform the navigation in.
-  ///   - isDetailOverride: Navigate in the detail route.
-  ///   - preserveBranch: Preserve the branch of the path.
-  ///   - animate: Animate the anvigation.
-  /// - Returns: A navigation action.
-  public func pop(to path: String, inScene scene: String? = nil, isDetail isDetailOverride: Bool? = nil, preserveBranch: Bool = false, animate: Bool = true)
-    -> Action
-  {
-    let isDetailForPath = isDetailOverride ?? self.isDetail
-    guard let absolutePath = standardizedPath(forPath: path, notRelative: isDetailForPath != isDetail) else { return EmptyAction() }
-    return NavigationAction.pop(
-      to: absolutePath,
-      inScene: scene ?? sceneName,
-      isDetail: isDetailForPath,
-      preserveBranch: preserveBranch,
-      animate: animate
-    )
-  }
-
   /// Manually complete the navigation.
   ///
   /// - Parameter isDetailOverride: Complete in the detail route.

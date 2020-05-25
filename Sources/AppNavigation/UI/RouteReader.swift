@@ -23,6 +23,7 @@ public struct RouteReader<Content>: ConnectableView where Content: View {
   }
 
   public struct Props: Equatable {
+    var useRootDetail: Bool
     var route: NavigationState.Route
     var path: String?
     var completed: Bool
@@ -31,16 +32,19 @@ public struct RouteReader<Content>: ConnectableView where Content: View {
 
   public func map(state: NavigationStateRoot) -> Props? {
     guard let scene = waypoint.resolveSceneState(in: state) else { return nil }
-    let route = isDetail ?? waypoint.isDetail ? scene.detailRoute : scene.route
+    let useRootDetail = isDetail == true && !waypoint.isDetail
+    let route = waypoint.isDetail || useRootDetail ? scene.detailRoute : scene.route
     return Props(
+      useRootDetail: useRootDetail,
       route: route,
-      path: route.legsByPath[waypoint.path]?.path,
+      path: useRootDetail ? route.legsByPath[waypoint.path]?.path : "/",
       completed: route.completed,
       animate: scene.animate
     )
   }
 
   public func body(props: Props) -> some View {
+    let waypoint = props.useRootDetail ? Waypoint(isDetail: true) : self.waypoint
     let leg = props.route.legsByPath[waypoint.path]
     return content(
       RouteInfo(

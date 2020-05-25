@@ -18,7 +18,7 @@ extension NavigationState {
 
     /// The detail route of a scene.
     public var detailRoute: Route = Route()
-    
+
     public var animate: Bool {
       route.animate || detailRoute.animate
     }
@@ -28,7 +28,7 @@ extension NavigationState {
       self.route = route
       self.detailRoute = detailRoute
     }
-    
+
     public enum CodingKeys: String, CodingKey {
       case name, route, detailRoute
     }

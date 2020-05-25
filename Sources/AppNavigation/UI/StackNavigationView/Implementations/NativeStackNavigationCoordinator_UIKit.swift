@@ -45,6 +45,7 @@
 
     private var rootViewController: UIViewController?
     private var rootDetailViewController: UIViewController?
+    private var rootDetailPath: String?
 
     private var options: StackNavigationOptions = StackNavigationOptions()
     private var detailOptions: StackNavigationOptions = StackNavigationOptions()
@@ -53,13 +54,6 @@
     private var stackItems: [StackItem] = []
     private var detailStackItems: [StackItem] = []
     private var viewControllersByPath: [String: UIViewController] = [:]
-    private var replaceRoot: Bool = false {
-      didSet {
-        if replaceRoot != oldValue {
-          updateNavigation()
-        }
-      }
-    }
     private var showSplitViewDisplayModeButton: Bool = false {
       didSet { updateSplitNavigationDisplayModeButton() }
     }
@@ -73,7 +67,7 @@
     init<Content>(
       dispatch: ActionDispatcher,
       waypoint: Waypoint,
-      detailContent: AnyView?,
+      detailContent: RootDetailWaypointContent?,
       animate: Bool,
       rootView: Content
     ) where Content: View {
@@ -81,34 +75,45 @@
       self.waypoint = waypoint
       self.animate = animate
       super.init()
-      setRootView(rootView: rootView, isDetail: false)
-      setRootView(rootView: detailContent, isDetail: true)
+      setRootView(rootView: rootView)
+      setRootDetailView(content: detailContent)
     }
 
-    func setRootView<Content>(rootView: Content?, isDetail: Bool) where Content: View {
-      guard rootView != nil else {
-        if isDetail {
-          rootDetailViewController = nil
-        }
-        return
-      }
+    func setRootView<Content>(rootView: Content?) where Content: View {
       self.setRootViewInternal(
         rootView: (rootView
           .onPreferenceChange(StackNavigationPreferenceKey.self) { [weak self] in
-            if isDetail {
-              self?.detailOptions = $0
-            } else {
-              self?.options = $0
-            }
+            self?.options = $0
           }
           .onPreferenceChange(StackItemPreferenceKey.self) { [weak self] in
-            self?.updateStackItems($0, isDetail: isDetail)
+            self?.updateStackItems($0, isDetail: false)
           }
           // Don't let parent navigation views use the routes.
           .preference(key: StackItemPreferenceKey.self, value: [])
           .clearDetailItem()),
-        isDetail: isDetail
+        isDetail: false
       )
+    }
+
+    func setRootDetailView(content: RootDetailWaypointContent?) {
+      guard content != nil else {
+        rootDetailViewController = nil
+        return
+      }
+      self.setRootViewInternal(
+        rootView: (content?.view
+          .onPreferenceChange(StackNavigationPreferenceKey.self) { [weak self] in
+            self?.detailOptions = $0
+          }
+          .onPreferenceChange(StackItemPreferenceKey.self) { [weak self] in
+            self?.updateStackItems($0, isDetail: true)
+          }
+          // Don't let parent navigation views use the routes.
+          .preference(key: StackItemPreferenceKey.self, value: [])
+          .clearDetailItem()),
+        isDetail: true
+      )
+      self.rootDetailPath = content?.waypoint.path
     }
 
     private func setRootViewInternal<V>(rootView: V, isDetail: Bool) where V: View {
@@ -127,7 +132,6 @@
 
     private func updateStackItems(_ newStackItems: [StackItem], isDetail: Bool) {
       let stackItems = isDetail ? self.detailStackItems : self.stackItems
-      guard stackItems != newStackItems else { return }
       let newStackItemByPath = Set(newStackItems.map(\.path))
       stackItems.forEach {
         if !newStackItemByPath.contains($0.path) {
@@ -154,23 +158,22 @@
       self.navigationController?.hidesBarsWhenKeyboardAppears = options.hidesBarsWhenKeyboardAppears
       self.navigationController?.hidesBarsWhenVerticallyCompact = options.hidesBarsWhenVerticallyCompact
       self.navigationController?.navigationBar.tintColor = options.barTintColor
-      self.replaceRoot = options.replaceRoot
       self.showSplitViewDisplayModeButton = options.showSplitViewDisplayModeButton
     }
 
     func updateNavigation() {
       guard let rootViewController = rootViewController else { return }
-      var viewControllers: [UIViewController] = stackItems.compactMap { self.viewControllersByPath[$0.path] }
+      var viewControllers: [UIViewController] =
+        [rootViewController]
+        + stackItems.compactMap {
+          self.viewControllersByPath[$0.path]
+        }
 
       self.updateOptions(options)
       if let rootDetailViewController = rootDetailViewController {
         viewControllers.append(rootDetailViewController)
         viewControllers.append(contentsOf: detailStackItems.compactMap { self.viewControllersByPath[$0.path] })
         self.updateOptions(detailOptions)
-      }
-
-      if viewControllers.count == 0 || !replaceRoot {
-        viewControllers.insert(rootViewController, at: 0)
       }
 
       if navigationController?.viewControllers == viewControllers {
@@ -203,6 +206,7 @@
     /// of UIHostingView crashes if it's called
     /// - Parameter viewController: The view controller.
     private func prerenderViewController(viewController: UIViewController) {
+      guard viewController.splitViewController == nil else { return }
       if viewController.parent == nil {
         navigationController?.addChild(viewController)
         navigationController?.view.addSubview(viewController.view)
@@ -218,7 +222,6 @@
   extension StackNavigationCoordinator: UINavigationControllerDelegate {
 
     func navigationController(_ navigationController: UINavigationController, willShow viewController: UIViewController, animated: Bool) {
-      prerenderViewController(viewController: viewController)
       updateSplitNavigationDisplayModeButton()
     }
 
@@ -235,11 +238,15 @@
         }
         return
       }
-      guard let vcIndex = viewControllersByPath.firstIndex(where: { key, vc in vc == viewController })
-      else { return }
-      let path = viewControllersByPath.keys[vcIndex]
-      if let stackItem = (stackItems + detailStackItems).last {
+      var path: String?
+      if let vcIndex = viewControllersByPath.firstIndex(where: { key, vc in vc == viewController }) {
+        path = viewControllersByPath.keys[vcIndex]
+      } else if viewController == rootDetailViewController {
+        path = rootDetailPath ?? "/"
+      }
+      if let path = path, let stackItem = (stackItems + detailStackItems).last {
         if stackItem.path != path {
+          viewControllersByPath[stackItem.path] = nil
           dispatch(waypoint.navigate(to: path, isDetail: !detailStackItems.isEmpty, animate: false))
           dispatch(waypoint.completeNavigation())
         }

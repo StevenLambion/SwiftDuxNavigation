@@ -5,12 +5,12 @@ import SwiftUI
 ///
 /// Navigation views may access the environment value to handle the detail route.
 public struct RootDetailWaypointContent {
-  public var path: String
+  public var waypoint: Waypoint
   public var view: AnyView
 
-  init<Content>(path: String, content: Content) where Content: View {
-    self.path = path
-    self.view = AnyView(content.resetRoute(with: path, isDetail: true))
+  init<Content>(waypoint: Waypoint, content: Content) where Content: View {
+    self.waypoint = waypoint
+    self.view = AnyView(content)
   }
 }
 
