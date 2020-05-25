@@ -15,9 +15,9 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
     case .setError(let error, let message):
       state.navigation.lastNavigationError = error
       state.navigation.lastNavigationErrorMessage = message
-    case .beginRouting(let path, let sceneName, let isDetail, let animate):
+    case .beginRouting(let path, let sceneName, let isDetail, let skipIfAncestor, let animate):
       state = updateRoute(in: state, forScene: sceneName, isDetail: isDetail) { route, scene in
-        beginRouting(route: &route, path: path, animate: animate)
+        beginRouting(route: &route, path: path, skipIfAncestor: skipIfAncestor, animate: animate)
       }
     case .completeRouting(let sceneName, let isDetail):
       state = updateRoute(in: state, forScene: sceneName, isDetail: isDetail) { route, scene in
@@ -70,10 +70,11 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
     }
   }
 
-  private func beginRouting(route: inout NavigationState.Route, path: String, animate: Bool) {
+  private func beginRouting(route: inout NavigationState.Route, path: String, skipIfAncestor: Bool, animate: Bool) {
     let url = path.standardizedURL(withBasePath: route.path)
     guard let absolutePath = url?.absoluteString else { return }
     let resolvedPath = pathFromCache(route: route, path: absolutePath) ?? absolutePath
+    guard !skipIfAncestor || !route.path.starts(with: resolvedPath) else { return }
     let (segments, orderedLegPaths) = buildRouteSegments(path: resolvedPath)
     route = NavigationState.Route(
       path: resolvedPath,

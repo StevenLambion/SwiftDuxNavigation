@@ -57,9 +57,10 @@ public struct Waypoint: Equatable {
   ///   - path: The path to navigate to.
   ///   - scene: The scene to perform the navigation in.
   ///   - isDetailOverride: Navigate in the detail route.
+  ///   - skipIfAncestor: Prevents the route from changing if the next path is an ancestor.
   ///   - animate: Animate the anvigation.
   /// - Returns: A navigation action.
-  public func navigate<T>(to path: T, inScene scene: String? = nil, isDetail isDetailOverride: Bool? = nil, animate: Bool = true)
+  public func navigate<T>(to path: T, inScene scene: String? = nil, isDetail isDetailOverride: Bool? = nil, skipIfAncestor: Bool = false, animate: Bool = true)
     -> ActionPlan<NavigationStateRoot> where T: LosslessStringConvertible
   {
     let path = String(path)
@@ -67,7 +68,7 @@ public struct Waypoint: Equatable {
     guard let absolutePath = standardizedPath(forPath: path, notRelative: isDetailForPath != isDetail) else {
       return ActionPlan { _ in }
     }
-    return NavigationAction.navigate(to: absolutePath, inScene: scene ?? sceneName, isDetail: isDetailForPath, animate: animate)
+    return NavigationAction.navigate(to: absolutePath, inScene: scene ?? sceneName, isDetail: isDetailForPath, skipIfAncestor: skipIfAncestor, animate: animate)
   }
 
   /// Manually complete the navigation.

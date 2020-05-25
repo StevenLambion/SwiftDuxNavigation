@@ -15,7 +15,7 @@ public enum NavigationAction: Action {
   case clearScene(String)
 
   /// Begin routing to a new path.
-  case beginRouting(path: String, scene: String, isDetail: Bool, animate: Bool)
+  case beginRouting(path: String, scene: String, isDetail: Bool, skipIfAncestor: Bool, animate: Bool)
 
   /// Complete the navigation routing.
   case completeRouting(scene: String, isDetail: Bool)
@@ -35,12 +35,14 @@ extension NavigationAction {
   ///   - path: The path to navigate to. It can be an absolute or relative path.
   ///   - scene: The scene to navigate.
   ///   - isDetail: Applies to the detail route.
+  ///   - skipIfAncestor: Prevents the route from changing if the next path is an ancestor.
   ///   - animate: Animate the navigational transition.
   /// - Returns: The navigation action.
   public static func navigate(
     to path: String,
     inScene scene: String = NavigationState.Scene.defaultName,
     isDetail: Bool = false,
+    skipIfAncestor: Bool = false,
     animate: Bool = true
   ) -> ActionPlan<NavigationStateRoot> {
     ActionPlan { store, completed in
@@ -57,6 +59,7 @@ extension NavigationAction {
           path: path,
           scene: scene,
           isDetail: isDetail,
+          skipIfAncestor: skipIfAncestor,
           animate: animate
         )
       )
