@@ -15,7 +15,7 @@
 
     public func body(info: ResolvedWaypointInfo) -> some View {
       NativeSplitNavigationView(
-        masterContent: masterContent
+        masterContent: masterContent.waypoint(with: info.nextWaypoint)
       )
       .edgesIgnoringSafeArea(.all)
       .waypoint(with: info.nextWaypoint)

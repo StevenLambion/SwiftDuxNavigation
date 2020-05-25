@@ -12,14 +12,13 @@
     var detailContent: DetailContent
 
     func body(content: Content, info: ResolvedWaypointInfo) -> some View {
-      let path = name.map { "/\($0)/" } ?? "/"
       let activate = rootDetailWaypointContent == nil && info.active
       return
         content
         .environment(
           \.rootDetailWaypointContent,
           activate
-            ? RootDetailWaypointContent(path: path, content: detailContent)
+            ? RootDetailWaypointContent(waypoint: info.nextWaypoint, content: detailContent.waypoint(with: info.nextWaypoint))
             : rootDetailWaypointContent
         )
     }

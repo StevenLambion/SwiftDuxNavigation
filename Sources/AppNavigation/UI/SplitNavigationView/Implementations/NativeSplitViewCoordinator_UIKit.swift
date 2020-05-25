@@ -52,8 +52,11 @@
       let masterContent = masterContent.onPreferenceChange(SplitNavigationPreferenceKey.self) { [weak self] in
         self?.updateOptions(options: $0)
       }
-      let includeDetail = isCollapsed && rootDetailWaypointContent != nil && rootDetailWaypointContent?.path != "/"
-      let nextDetailWaypoint = includeDetail ? rootDetailWaypointContent : nil
+      let includeDetail = isCollapsed && rootDetailWaypointContent != nil && rootDetailWaypointContent?.waypoint.path != "/"
+      let nextDetailWaypoint =
+        includeDetail
+        ? rootDetailWaypointContent
+        : nil
       updateMasterViewController(
         content: StackNavigationView { masterContent }
           .id(waypoint.path + "@split-navigation-master")
@@ -74,8 +77,9 @@
     private func updateDetailContent() {
       let detailContent = !isCollapsed ? self.rootDetailWaypointContent : nil
       let detailView = StackNavigationView {
-        detailContent?.view.stackNavigationReplaceRoot(true)
+        detailContent?.view
       }
+      .waypoint(with: detailContent?.waypoint)
       .id(waypoint.path + "@split-navigation-detail")
       .clearDetailItem()
 

@@ -8,34 +8,25 @@
     var stackItemContent: StackItemContent
 
     @State private var childStackItems: [StackItem] = []
-    @State private var stackNavigationOptions: StackNavigationOptions = StackNavigationOptions()
+    @State private var stackNavigationOptions: StackNavigationOptions? = nil
 
     public func body(content: Content, info: ResolvedWaypointInfo) -> some View {
-      Group {
-        if info.active {
-          content
-            .onPreferenceChange(StackItemPreferenceKey.self) {
-              self.childStackItems = $0
-            }
-            .onPreferenceChange(StackNavigationPreferenceKey.self) {
-              self.stackNavigationOptions = $0
-            }
-            .stackItemPreference(createStackItem(from: info))
-            .stackNavigationPreference { $0 = self.stackNavigationOptions }
-        } else {
-          content
+      content
+        .stackItemPreference(info.active ? createStackItem(info: info) : childStackItems)
+        .stackNavigationPreference {
+          guard let options = self.stackNavigationOptions else { return }
+          $0 = options
         }
-      }
     }
 
-    private func createStackItem(from info: ResolvedWaypointInfo) -> [StackItem] {
-      let waypoint = info.waypoint
+    private func createStackItem(info: ResolvedWaypointInfo) -> [StackItem] {
+      let waypoint = info.nextWaypoint
       var stackItems = childStackItems
       let newStackItem = StackItem(
         path: waypoint.path,
         view:
           stackItemContent
-          .waypoint(with: info.nextWaypoint)
+          .waypoint(with: waypoint)
           .onPreferenceChange(StackItemPreferenceKey.self) {
             self.childStackItems = $0
           }

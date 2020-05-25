@@ -21,7 +21,7 @@
         .environment(
           \.rootDetailWaypointContent,
           activate
-            ? RootDetailWaypointContent(path: name.map { "/\($0)/" } ?? "/", content: detailContent(pathParameter!))
+            ? RootDetailWaypointContent(waypoint: info.nextWaypoint, content: detailContent(pathParameter!).waypoint(with: info.nextWaypoint))
             : rootDetailWaypointContent
         )
     }

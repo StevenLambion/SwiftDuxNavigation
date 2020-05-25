@@ -16,7 +16,7 @@
     public func body(info: ResolvedWaypointInfo) -> some View {
       NativeStackNavigationView(
         animate: info.animate,
-        rootView: rootView
+        rootView: rootView.waypoint(with: info.nextWaypoint)
       )
       .opacity(!info.animate && !info.completed ? 0 : 1)
       .edgesIgnoringSafeArea(.all)

@@ -13,19 +13,15 @@
     var stackItemContent: (T) -> StackItemContent
 
     @State private var childStackItems: [StackItem] = []
-    @State private var stackNavigationOptions: StackNavigationOptions = StackNavigationOptions()
+    @State private var stackNavigationOptions: StackNavigationOptions? = nil
 
     public func body(content: Content, info: ResolvedWaypointInfo) -> some View {
-      Group {
-        if info.active {
-          content
-            .id(info.waypoint.path)
-            .stackItemPreference(createStackItem(info: info))
-            .stackNavigationPreference { $0 = self.stackNavigationOptions }
-        } else {
-          content
+      content
+        .stackItemPreference(info.active ? createStackItem(info: info) : childStackItems)
+        .stackNavigationPreference {
+          guard let options = self.stackNavigationOptions else { return }
+          $0 = options
         }
-      }
     }
 
     private func createStackItem(info: ResolvedWaypointInfo) -> [StackItem] {
@@ -33,12 +29,12 @@
       guard let pathParameter = info.pathParameter(as: T.self) else {
         return stackItems
       }
-      let waypoint = info.waypoint
+      let waypoint = info.nextWaypoint
       let newStackItem = StackItem(
         path: waypoint.path,
         fromBranch: false,
         view: stackItemContent(pathParameter)
-          .waypoint(with: info.nextWaypoint)
+          .waypoint(with: waypoint)
           .onPreferenceChange(StackItemPreferenceKey.self) {
             self.childStackItems = $0
           }
