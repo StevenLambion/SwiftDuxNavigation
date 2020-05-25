@@ -55,9 +55,13 @@ It also provide a small set of primitive navigational views out-of-the-box, but 
       }
     ```
 
-1. Add the navigation reducer to the store.
+1. Add the `NavigationReducer` and `NavigationMiddleware` to the store.
     ```swift
-      Store(state: AppState(), reducer: AppReducer() + NavigationReducer())
+      Store(
+        state: AppState(),
+        reducer: AppReducer() + NavigationReducer(),
+        middleware: NavigationMiddleware()
+      )
     ```
 
 1. Provide the store to the root of the application.
