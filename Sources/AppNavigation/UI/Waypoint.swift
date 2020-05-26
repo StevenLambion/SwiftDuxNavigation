@@ -24,19 +24,54 @@ public struct Waypoint: Equatable {
   /// 
   /// - Parameter state: The application state.
   /// - Returns: The `Scene`.
-  public func resolveSceneState(in state: NavigationStateRoot) -> NavigationState.Scene? {
+  public func resolveScene(in state: NavigationStateRoot) -> NavigationState.Scene? {
     state.navigation.sceneByName[sceneName]
   }
 
   /// Resolve the `Route` relative to the view from the application state.
   ///
-  /// - Parameter state: The application state.
+  /// - Parameters:
+  ///   - state: The application state.
+  ///   - isDetailOverride: Get the detail route.
   /// - Returns: The `Route`.
-  public func resolveState(in state: NavigationStateRoot) -> NavigationState.Route? {
+  public func resolveRoute(in state: NavigationStateRoot, isDetail isDetailOverride: Bool? = nil) -> NavigationState.Route? {
+    let isDetail = self.isDetail || isDetailOverride == true
     if isDetail {
-      return resolveSceneState(in: state)?.detailRoute
+      return resolveScene(in: state)?.detailRoute
     }
-    return resolveSceneState(in: state)?.route
+    return resolveScene(in: state)?.route
+  }
+
+  /// Resolve the `RouteLeg` relative to the view from the application state.
+  ///
+  /// - Parameters:
+  ///   - state: The application state.
+  ///   - isDetailOverride: Get the detail route.
+  /// - Returns: The `RouteLeg`.
+  public func resolveLeg(in state: NavigationStateRoot, isDetail isDetailOverride: Bool? = nil) -> NavigationState.RouteLeg? {
+    resolveRoute(in: state, isDetail: isDetailOverride)?.legsByPath[path]
+  }
+
+  /// Resolve the path component of the waypoint relative to the view from the application state.
+  ///
+  /// - Parameters:
+  ///   - state: The application state.
+  ///   - isDetailOverride: Get the detail route.
+  /// - Returns: The `RouteLeg`.
+  public func resolveComponent(in state: NavigationStateRoot, isDetail isDetailOverride: Bool? = nil) -> String? {
+    resolveLeg(in: state, isDetail: isDetailOverride)?.component
+  }
+
+  /// Resolve the path component of the waypoint relative to the view from the application state.
+  ///
+  /// - Parameters:
+  ///   - state: The application state.
+  ///   - isDetailOverride: Get the detail route.
+  ///   - type: The type to convert the component to.
+  /// - Returns: The `RouteLeg`.
+  public func resolveComponent<T>(in state: NavigationStateRoot, isDetail isDetailOverride: Bool? = nil, as type: T.Type) -> T?
+  where T: LosslessStringConvertible {
+    resolveLeg(in: state, isDetail: isDetailOverride).flatMap { T($0.component) }
   }
 
   /// Get the next Waypoint object for the provided component.

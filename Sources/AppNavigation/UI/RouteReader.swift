@@ -31,7 +31,7 @@ public struct RouteReader<Content>: ConnectableView where Content: View {
   }
 
   public func map(state: NavigationStateRoot) -> Props? {
-    guard let scene = waypoint.resolveSceneState(in: state) else { return nil }
+    guard let scene = waypoint.resolveScene(in: state) else { return nil }
     let useRootDetail = isDetail == true && !waypoint.isDetail
     let route = waypoint.isDetail || useRootDetail ? scene.detailRoute : scene.route
     return Props(
