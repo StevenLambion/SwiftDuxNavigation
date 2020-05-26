@@ -53,14 +53,14 @@
         self?.updateOptions(options: $0)
       }
       let includeDetail = isCollapsed && rootDetailWaypointContent != nil && rootDetailWaypointContent?.waypoint.path != "/"
-      let nextDetailWaypoint =
+      let nextDetailWaypointContent =
         includeDetail
         ? rootDetailWaypointContent
         : nil
       updateMasterViewController(
         content: StackNavigationView { masterContent }
           .id(waypoint.path + "@split-navigation-master")
-          .environment(\.rootDetailWaypointContent, nextDetailWaypoint)
+          .environment(\.rootDetailWaypointContent, nextDetailWaypointContent)
       )
     }
 
