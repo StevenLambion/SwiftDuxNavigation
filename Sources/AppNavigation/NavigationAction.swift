@@ -110,6 +110,10 @@ extension NavigationAction {
     ActionPlan<NavigationStateRoot> { store, completed in
       let getRoute = routeGetter(forScene: sceneName, isDetail: isDetail)
       let options = store.state.navigation.options
+
+      guard let route = getRoute(store) else { return nil }
+      guard !route.completed else { return nil }
+
       return store.didChange
         .setFailureType(to: NavigationError.self)
         .timeout(options.completionTimeout, scheduler: RunLoop.main) {
@@ -152,7 +156,7 @@ extension NavigationAction {
   private static func sceneGetter(forScene sceneName: String) -> (StoreProxy<NavigationStateRoot>) -> NavigationState.Scene? {
     { store in
       guard let scene = store.state.navigation.sceneByName[sceneName] else {
-        store.send(self.setError(.sceneNotFound, message: "Scene not found for: '\(sceneName)'"))
+        store.send(self.setError(.sceneNotFound(scene: sceneName), message: "Scene not found for: '\(sceneName)'"))
         return nil
       }
       return scene
