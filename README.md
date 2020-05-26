@@ -8,29 +8,29 @@
 SwiftDux Navigation implements deep-link routing for SwiftUI applications. It's currently in an early development stage.
 
 ## Purpose
-The purpose of this library is to provide a stateful, deep-link navigational system for an application. In the same way that SwiftUI views represent the application's current state, it does the same for navigation. The library handles this by utilizing a single navigational state object. This state is updated through a reducer function. The changes from the navigational state are then propagated throughout the SwiftUI view hierarchy.
-
-It also provide a small set of primitive navigational views out-of-the-box, but it should not be seen as a UI library. To reduce opinionated UI decisions, it intentionally leaves out platform-specific functionality that may require extra intervention to implement. For example, displaying a right chevron in a navigable list on iOS. Rather than adding extra logic to the `RouteLink` view, it's better for the app developer to implement it the way they see fit. In terms of extensibility, the library should provide everything needed to create new navigational views that it may lack.
+The purpose of this library is to provide a stateful, deep-link navigational system for an application. In the same way that SwiftUI views represent the application's current state, it does the same for navigation. The library implements this through a single navigational state object. This state is updated through a reducer function. The changes from the navigational state are then propagated throughout the SwiftUI view hierarchy.
 
 ## Features
-- Route style navigation.
-- Navigate by custom URL app scheme.
+- Deep-link navigation
+- Master-detail routing
+- URL navigation support
+- Multi-UIScene support
+- Simple API to build navigation views.
 - Save and restore the navigation via `PersistStateMiddleware`.
-- Multi-UIScene support.
-- Master-detail routing.
-- Automatically passes the store object across view hierarchies.
 
 ## Navigation Views
-- `SplitNavigationView`
+- [SplitNavigationView](##split-navigation)
   - Uses UISplitNavigationController on iOS.
     - Automatically handles the collapse and expand layouts.
     - Show or hide the display mode button.
-- `StackNavigationView`
+  - Uses an HSplitView on macOS.
+- [StackNavigationView](##stack-navigation)
   - Uses UINavigationController on iOS.
     - Use gestures to navigate back or hide the navigation bar.
     - Works with SwiftUI's navigation bar API.
-- `TabNavigationView`
-  - Similar API to TabView.
+  - Pure-SwiftUI implementation is used on macOS.
+- [TabNavigationView](##tab-navigation)
+  - Thin wrapper over TabView.
   - Automatically saves and restores tab routes.
 
 ## Modals
@@ -43,37 +43,45 @@ It also provide a small set of primitive navigational views out-of-the-box, but 
 - `RouteReader` - Reads information about the current route and waypoint.
 - `WaypointResolver` - Resolves and manages a waypoint for a custom navigational view.
 
-## Environment Values
-- `waypoint` - Get information about the current waypoint relative to the view.
-
 ## Getting started
 
 1. Add navigation support to the application state by adhering to the `NavigationStateRoot` protocol.
     ```swift
-      struct AppState: NavigationStateRoot {
-        var navigation: NavigationState = NavigationState()
-      }
+    struct AppState: NavigationStateRoot {
+      var navigation: NavigationState = NavigationState()
+    }
     ```
 
 1. Add the `NavigationReducer` and `NavigationMiddleware` to the store.
     ```swift
-      Store(
-        state: AppState(),
-        reducer: AppReducer() + NavigationReducer(),
-        middleware: NavigationMiddleware()
-      )
+    Store(
+      state: AppState(),
+      reducer: AppReducer() + NavigationReducer(),
+      middleware: NavigationMiddleware()
+    )
+    ```
+
+1. You may optionally add the `PersistStateMiddleware` from the SwiftDuxExtras module to save the navigational state.
+    ```swift
+    Store(
+      state: AppState(),
+      reducer: AppReducer() + NavigationReducer(),
+      middleware: 
+        NavigationMiddleware() +
+        PersistStateMiddleware(JSONStatePersistor())
+    )
     ```
 
 1. Provide the store to the root of the application.
     ```swift
-      RootView().provideStore(store)
+    RootView().provideStore(store)
     ```
 
 1. Optionally, specify the current scene when creating a new window or UIScene. By default, the routing uses a "main" scene to conduct navigation.
     ```swift
-      UIHostingController(
-        rootView: SecondaryView().scene(session.persistentIdentifier)
-      )
+    UIHostingController(
+      rootView: SecondaryView().scene(session.persistentIdentifier)
+    )
     ```
     Clean up any old scenes by dispatching `NavigationAction.clearScene(_:)`.
     ```swift
@@ -257,8 +265,6 @@ SplitNavigationView {
 .detailItem("notes") { noteId in
   NoteEditorContainer(id: noteId)
 }
-.splitNavigationPreferredDisplayMode(.allVisible)
-.splitNavigationShowDisplayModeButton(true)
 
 // Use RouteLink to navigate to a detail route:
 RouteLink(path: "notes/\(note.id)", isDetail: true) {
@@ -286,6 +292,139 @@ TabNavigationView(initialTab: "allMusic") {
   }
 }
 ```
+
+## Custom navigational view
+The `WaypointResolver` is the primary mechanism to build a new navigational view. There's also the `WaypointResolverView` and `WaypointResolverViewModifier` as conveniences. The resolver requires the name of the waypoint and if it should handle a dynamic path parameter. Waypoints may have a name, a dynamic path parameter, or both.
+
+They use this information to watch the current routing of the application. Their name and dynamic path parameter become segments within the expected path of the route. The `WaypointResolver` will notify the navigation view when it becomes active, and pass any useful information to it such as the value of its path parameter.
+
+The resolver will also notify the routing system if navigation has completed. This indicates that all waypoints were properly resolved. If a route ever fails to complete, the `NavigationMiddleware` will redirect back to the root of the application. This is the default functionality, and can be overridden.
+
+1. To begin, create a new view. Add the `WaypointResolver` to the body, and provide a variable to allow an optional name for the waypoint.
+    ```Swift
+    struct MyTabNavigationView: View {
+      var name: String?
+
+      var body: some View {
+        WaypointResolver(name: name)
+      }
+    }
+    ```
+
+1. Because the tab view needs a dynamic path parameter, let's enable it. We should also have a default tab selected. The resolver allows you to specify a default path parameter value.
+    ```Swift
+    struct MyTabNavigationView: View {
+      var name: String?
+      var initialTab: String
+
+      var body: some View {
+        WaypointResolver(name: name, hasPathParameter: true, defaultPathParameter: initialTab)
+      }
+    }
+    ```
+
+1. Let's implement a new function that handles the results of the resolver. We also need to provide the tab view's contents, so we'll add another variable called `content`. Add an init method to allow the content to be built with a `ViewBuilder`.
+    ```Swift
+    struct MyTabNavigationView<Content>: View where Content: View {
+      var name: String?
+      var initialTab: String
+      var content: Content
+
+      init(name: String?, initialTab: String, @ViewBuilder content: () -> Content) {
+        self.name = name
+        self.initialTab = initialTab
+        self.content = content()
+      }
+
+      var body: some View {
+        WaypointResolver(
+          name: name,
+          hasPathParameter: true,
+          defaultPathParameter: initialTab,
+          content: tabViewContents
+        )
+      }
+
+      func tabViewContents(info: ResolvedWaypointInfo) -> some View {
+        TabView { content }
+      }
+    }
+    ```
+
+1. Let's add support for tab selection. The resolver gives us the path parameter to use for the selection, so we just need a binding. Add a new function that takes a waypoint and the path parameter to create that new binding. We also include a mapped dispatch function, so we can send a navigation action to the store.
+    ```Swift
+    // Add this line to dispatch the navigation actions.
+    @MappedDispatch() private var dispatch
+
+    /// ...
+
+    private func selection(with waypoint: Waypoint, pathParameter: String) -> Binding<String> {
+      Binding(
+        get: { pathParameter },
+        set: { nextPathParameter in
+          self.dispatch(waypoint.navigate(to: nextPathParameter, animate: false))
+        }
+      )
+    }
+    ```
+
+1. We call the new method to get the selection binding using `info.waypoint` and `info.pathParameter`. This is the waypoint that the the view represents.
+    ```Swift
+    func tabViewContents(info: ResolvedWaypointInfo) -> some View {
+      let selection = selectionBinding(with: info.waypoint, pathParameter: info.pathParameter ?? initialTab)
+      return TabView(selection: selection) { content }
+    }
+    ```
+1. The last requirement is to pass down the next waypoint to its children. The `info.nextWaypoint` represents the name and path parameter of this new tab navigation view. Child waypoints will use it as a starting point for their own route.
+    ```Swift
+    func tabViewContents(info: ResolvedWaypointInfo) -> some View {
+      let selection = selectionBinding(with: info.waypoint, pathParameter: info.pathParameter ?? initialTab)
+      return TabView(selection: selection) { 
+        content.waypoint(with: info.nextWaypoint)
+      }
+    }
+    ```
+
+1. Here's the completed code for a simple tab navigation view:
+    ```Swift
+    struct MyTabNavigationView<Content>: View where Content: View {
+      @MappedDispatch() private var dispatch
+      
+      var name: String?
+      var initialTab: String
+      var content: Content
+
+      init(name: String?, initialTab: String, @ViewBuilder content: () -> Content) {
+        self.name = name
+        self.initialTab = initialTab
+        self.content = content()
+      }
+
+      var body: some View {
+        WaypointResolver(
+          name: name,
+          hasPathParameter: true,
+          defaultPathParameter: initialTab,
+          content: tabViewContents
+        )
+      }
+      func tabViewContents(info: ResolvedWaypointInfo) -> some View {
+        let selection = selectionBinding(with: info.waypoint, pathParameter: info.pathParameter ?? initialTab)
+        return TabView(selection:selection) {
+          content.waypoint(with: info.nextWaypoint)
+        }
+      }
+
+      private func selectionBinding(with waypoint: Waypoint, pathParameter: String) -> Binding<String> {
+        Binding(
+          get: { pathParameter },
+          set: { nextPathParameter in
+            self.dispatch(waypoint.navigate(to: nextPathParameter, animate: false))
+          }
+        )
+      }
+    }
+    ```
 
 [swift-image]: https://img.shields.io/badge/swift-5.2-orange.svg
 [ios-image]: https://img.shields.io/badge/platforms-iOS%2013%20-222.svg
