@@ -14,11 +14,11 @@
 
     public func body(content: Content, info: ResolvedWaypointInfo) -> some View {
       ZStack {
-        content.zIndex(0)
-        contentCard(content: content, info: info)
-          .transition(transition(forActive: info.active))
-          .animation(info.animate ? .easeOut : .none)
-      }
+        if !info.active {
+          content.zIndex(0)
+        }
+        contentCard(content: content, info: info).transition(transition(forActive: info.active))
+      }.animation(info.animate ? .easeOut : .none)
     }
 
     private func contentCard(content: Content, info: ResolvedWaypointInfo) -> some View {
@@ -39,7 +39,7 @@
     private func transition(forActive active: Bool) -> AnyTransition {
       active
         ? AnyTransition.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading))
-        : AnyTransition.asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .trailing))
+        : AnyTransition.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing))
     }
   }
 #endif
