@@ -1,5 +1,4 @@
 #if canImport(UIKit) || os(macOS)
-  import SwiftDux
   import SwiftUI
 
   /// Create a master-detail style split navigation view.

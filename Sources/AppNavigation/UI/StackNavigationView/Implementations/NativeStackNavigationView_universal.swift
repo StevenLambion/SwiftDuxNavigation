@@ -12,7 +12,9 @@
     var rootView: RootView
 
     var body: some View {
-      rootView
+      StackItemCard {
+        rootView
+      }
     }
   }
 

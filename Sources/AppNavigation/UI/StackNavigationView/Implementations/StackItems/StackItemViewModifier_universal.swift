@@ -9,25 +9,20 @@
 
     public func body(content: Content, info: ResolvedWaypointInfo) -> some View {
       ZStack {
-        content.zIndex(0)
-        contentCard(content: content, info: info)
-          .transition(transition(forActive: info.active))
-          .animation(info.animate ? .easeOut : .none)
-      }
-    }
-
-    private func contentCard(content: Content, info: ResolvedWaypointInfo) -> some View {
-      return Group {
-        if info.active {
-          VStack {
-            Spacer()
-            stackItemContent.waypoint(with: info.nextWaypoint)
-            Spacer()
-          }
-          .background(Color.white)
-          .zIndex(1)
+        if !info.active {
+          content.zIndex(0)
         }
+        Group {
+          if info.active {
+            StackItemCard {
+              stackItemContent.waypoint(with: info.nextWaypoint)
+            }
+          }
+        }
+        .zIndex(1)
+        .transition(transition(forActive: info.active))
       }
+      .animation(info.animate ? .easeOut : .none)
     }
 
     private func transition(forActive active: Bool) -> AnyTransition {

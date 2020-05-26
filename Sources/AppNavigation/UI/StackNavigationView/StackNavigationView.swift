@@ -17,7 +17,6 @@ public struct StackNavigationView<RootView>: WaypointResolverView where RootView
       rootView: rootView.waypoint(with: info.nextWaypoint)
     )
     .opacity(!info.animate && !info.completed ? 0 : 1)
-    .edgesIgnoringSafeArea(.all)
     .waypoint(with: info.nextWaypoint)
   }
 }

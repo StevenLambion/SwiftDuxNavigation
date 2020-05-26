@@ -13,24 +13,30 @@
     var stackItemContent: (T) -> StackItemContent
 
     public func body(content: Content, info: ResolvedWaypointInfo) -> some View {
-      ZStack {
+      let pathParameter = info.pathParameter(as: T.self)
+      return ZStack {
         if !info.active {
           content.zIndex(0)
         }
-        contentCard(content: content, info: info).transition(transition(forActive: info.active))
-      }.animation(info.animate ? .easeOut : .none)
+        Group {
+          if pathParameter != nil && info.active {
+            StackItemCard {
+              stackItemContent(pathParameter!).waypoint(with: info.nextWaypoint)
+            }
+            .zIndex(1)
+          }
+        }.transition(transition(forActive: info.active))
+      }
+      .animation(info.animate ? .easeOut : .none)
     }
 
     private func contentCard(content: Content, info: ResolvedWaypointInfo) -> some View {
       let pathParameter = info.pathParameter(as: T.self)
       return Group {
         if pathParameter != nil && info.active {
-          VStack {
-            Spacer()
+          StackItemCard {
             stackItemContent(pathParameter!).waypoint(with: info.nextWaypoint)
-            Spacer()
           }
-          .background(Color.white)
           .zIndex(1)
         }
       }
