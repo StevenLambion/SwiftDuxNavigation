@@ -1,7 +1,7 @@
 import Foundation
 
-public enum NavigationError: String, Error, Codable {
+public enum NavigationError: Error, Equatable {
   case unknown
-  case sceneNotFound
-  case routeCompletionFailed
+  case sceneNotFound(scene: String)
+  case routeCompletionFailed(scene: String, isDetail: Bool)
 }

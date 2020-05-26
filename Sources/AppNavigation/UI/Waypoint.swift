@@ -39,10 +39,10 @@ public struct Waypoint: Equatable {
     return resolveSceneState(in: state)?.route
   }
 
-  /// Get the next RouteInfo object for the provided component.
+  /// Get the next Waypoint object for the provided component.
   ///
   /// - Parameter component: The next component.
-  /// - Returns: A new `RouteInfo`
+  /// - Returns: A new `Waypoint`
   public func next<T>(with component: T) -> Waypoint where T: LosslessStringConvertible {
     return Waypoint(
       sceneName: sceneName,

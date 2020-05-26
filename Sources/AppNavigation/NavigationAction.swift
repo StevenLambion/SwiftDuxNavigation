@@ -45,12 +45,9 @@ extension NavigationAction {
     skipIfAncestor: Bool = false,
     animate: Bool = true
   ) -> ActionPlan<NavigationStateRoot> {
-    ActionPlan { store, completed in
+    ActionPlan { store in
       let getRoute = self.routeGetter(forScene: scene, isDetail: isDetail)
-      guard let route = getRoute(store) else {
-        completed()
-        return nil
-      }
+      guard let route = getRoute(store) else { return }
       if !route.completed {
         store.send(self.completeRouting(scene: scene, isDetail: isDetail))
       }
@@ -63,7 +60,6 @@ extension NavigationAction {
           animate: animate
         )
       )
-      return waitForRouteCompeletion(forStore: store, inScene: scene, isDetail: isDetail, completed: completed)
     }
   }
 
@@ -98,6 +94,47 @@ extension NavigationAction {
     }
   }
 
+  /// Verify that a route has completed.
+  ///
+  /// If a route isn't completed in a given time range, it will timeout.
+  /// - Parameters:
+  ///   - sceneName: The route's scene.
+  ///   - isDetail: If it is the detail route.
+  /// - Returns: The AnyCancellable.
+  public static func verifyRouteCompeletion(
+    inScene sceneName: String,
+    isDetail: Bool
+  )
+    -> Action
+  {
+    ActionPlan<NavigationStateRoot> { store, completed in
+      let getRoute = routeGetter(forScene: sceneName, isDetail: isDetail)
+      let options = store.state.navigation.options
+
+      guard let route = getRoute(store) else { return nil }
+      guard !route.completed else { return nil }
+
+      return store.didChange
+        .setFailureType(to: NavigationError.self)
+        .timeout(options.completionTimeout, scheduler: RunLoop.main) {
+          NavigationError.routeCompletionFailed(scene: sceneName, isDetail: isDetail)
+        }
+        .compactMap { _ in getRoute(store) }
+        .filter { $0.completed }
+        .first { _ in true }
+        .sink(
+          receiveCompletion: { completion in
+            defer { completed() }
+            if case .failure(let error) = completion {
+              store.send(self.setError(error, message: "Route completion timed out for: '\(getRoute(store)?.path ?? "")'"))
+              store.send(NavigationAction.completeRouting(scene: sceneName, isDetail: isDetail))
+            }
+          },
+          receiveValue: { _ in }
+        )
+    }
+  }
+
   /// A getter that retrieves a specific route from a scene.
   ///
   /// - Parameters:
@@ -119,47 +156,10 @@ extension NavigationAction {
   private static func sceneGetter(forScene sceneName: String) -> (StoreProxy<NavigationStateRoot>) -> NavigationState.Scene? {
     { store in
       guard let scene = store.state.navigation.sceneByName[sceneName] else {
-        store.send(self.setError(.sceneNotFound, message: "Scene not found for: '\(sceneName)'"))
+        store.send(self.setError(.sceneNotFound(scene: sceneName), message: "Scene not found for: '\(sceneName)'"))
         return nil
       }
       return scene
     }
-  }
-
-  /// Creates a subscription that completes once an active route has finished resolving.
-  ///
-  /// If a route isn't completed in a given time range, it will timeout.
-  /// - Parameters:
-  ///   - store: The store.
-  ///   - sceneName: The route's scene.
-  ///   - isDetail: If it is the detail route.
-  ///   - completed: Called once the route is completed.
-  /// - Returns: The AnyCancellable.
-  private static func waitForRouteCompeletion(
-    forStore store: StoreProxy<NavigationStateRoot>,
-    inScene sceneName: String,
-    isDetail: Bool,
-    completed: @escaping () -> Void
-  )
-    -> AnyCancellable
-  {
-    let getRoute = routeGetter(forScene: sceneName, isDetail: isDetail)
-    let options = store.state.navigation.options
-    return store.didChange
-      .setFailureType(to: NavigationError.self)
-      .timeout(options.completionTimeout, scheduler: RunLoop.main) { NavigationError.routeCompletionFailed }
-      .compactMap { _ in getRoute(store) }
-      .filter { $0.completed }
-      .first { _ in true }
-      .sink(
-        receiveCompletion: { completion in
-          defer { completed() }
-          if case .failure(let error) = completion {
-            store.send(self.setError(error, message: "Route completion timed out for: '\(getRoute(store)?.path ?? "")'"))
-            store.send(NavigationAction.completeRouting(scene: sceneName, isDetail: isDetail))
-          }
-        },
-        receiveValue: { _ in }
-      )
   }
 }
