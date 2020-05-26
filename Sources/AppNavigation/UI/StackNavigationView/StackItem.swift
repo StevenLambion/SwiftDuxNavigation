@@ -1,7 +1,7 @@
 import SwiftUI
 
 extension View {
-  
+
   /// Add a new stack waypoint.
   ///
   /// - Parameters:

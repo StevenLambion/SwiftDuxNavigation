@@ -7,7 +7,6 @@
     var name: String?
     var stackItemContent: StackItemContent
 
-
     public func body(content: Content, info: ResolvedWaypointInfo) -> some View {
       ZStack {
         content.zIndex(0)
@@ -16,7 +15,7 @@
           .animation(info.animate ? .easeOut : .none)
       }
     }
-    
+
     private func contentCard(content: Content, info: ResolvedWaypointInfo) -> some View {
       return Group {
         if info.active {
@@ -30,7 +29,7 @@
         }
       }
     }
-    
+
     private func transition(forActive active: Bool) -> AnyTransition {
       active
         ? AnyTransition.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading))
