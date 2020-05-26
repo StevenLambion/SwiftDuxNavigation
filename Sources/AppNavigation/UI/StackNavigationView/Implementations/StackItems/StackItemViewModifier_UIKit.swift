@@ -38,18 +38,4 @@
       return stackItems
     }
   }
-
-  extension View {
-
-    /// Add a new stack waypoint.
-    /// 
-    /// - Parameters:
-    ///   - name: The name of the stack item.
-    ///   - content: The view of the waypoint.
-    /// - Returns: A view.
-    public func stackItem<Content>(_ name: String? = nil, @ViewBuilder content: () -> Content) -> some View where Content: View {
-      self.modifier(StackItemViewModifier(name: name, stackItemContent: content()))
-    }
-  }
-
 #endif
