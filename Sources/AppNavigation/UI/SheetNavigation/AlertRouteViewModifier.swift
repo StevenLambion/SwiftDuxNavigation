@@ -11,7 +11,7 @@ internal struct AlertRouteViewModifier: WaypointResolverViewModifier {
 
   func body(content: Content, info: ResolvedWaypointInfo) -> some View {
     content
-      .waypoint(with: info.animate ? info.nextWaypoint : nil)
+      .waypoint(with: info.active ? info.nextWaypoint : nil)
       .alert(
         isPresented: Binding(
           get: { info.active },

@@ -5,16 +5,16 @@ internal struct SheetRouteViewModifier<Modal>: WaypointResolverViewModifier wher
   @MappedDispatch() private var dispatch
 
   var name: String?
-  var modal: () -> Modal
+  var modal: Modal
 
-  init(name: String, @ViewBuilder modal: @escaping () -> Modal) {
+  init(name: String, modal: Modal) {
     self.name = name
     self.modal = modal
   }
 
   public func body(content: Content, info: ResolvedWaypointInfo) -> some View {
     content
-      .waypoint(with: info.animate ? info.nextWaypoint : nil)
+      .waypoint(with: info.active ? info.nextWaypoint : nil)
       .sheet(
         isPresented: Binding(
           get: { info.active },
@@ -24,7 +24,7 @@ internal struct SheetRouteViewModifier<Modal>: WaypointResolverViewModifier wher
           }
         ),
         content: {
-          self.modal().waypoint(with: info.nextWaypoint)
+          self.modal.waypoint(with: info.nextWaypoint)
         }
       )
   }
@@ -38,7 +38,7 @@ extension View {
   ///   - name: The name of the route
   ///   - content: A view to display as a sheet.
   /// - Returns: A view.
-  public func sheet<Modal>(_ name: String, @ViewBuilder content: @escaping () -> Modal) -> some View where Modal: View {
-    self.modifier(SheetRouteViewModifier(name: name, modal: content))
+  public func sheet<Modal>(_ name: String, @ViewBuilder content: () -> Modal) -> some View where Modal: View {
+    self.modifier(SheetRouteViewModifier(name: name, modal: content()))
   }
 }
