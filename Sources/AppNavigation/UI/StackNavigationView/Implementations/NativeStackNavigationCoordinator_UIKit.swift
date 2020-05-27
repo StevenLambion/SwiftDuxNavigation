@@ -1,5 +1,5 @@
 #if canImport(UIKit)
-
+  import Combine
   import SwiftDux
   import SwiftUI
 
@@ -42,7 +42,7 @@
     var waypoint: Waypoint
     var detailContent: RootDetailWaypointContent?
     var animate: Bool
-
+    
     private var rootViewController: UIViewController?
     private var rootDetailViewController: UIViewController?
     private var rootDetailPath: String?
@@ -54,6 +54,7 @@
     private var stackItems: [StackItem] = []
     private var detailStackItems: [StackItem] = []
     private var viewControllersByPath: [String: UIViewController] = [:]
+    private var currentViewControllers: [UIViewController] = []
     private var showSplitViewDisplayModeButton: Bool = false {
       didSet { updateSplitNavigationDisplayModeButton() }
     }
@@ -74,7 +75,9 @@
       self.dispatch = dispatch
       self.waypoint = waypoint
       self.animate = animate
+      
       super.init()
+      
       setRootView(rootView: rootView)
       setRootDetailView(content: detailContent)
     }
@@ -118,15 +121,20 @@
 
     private func setRootViewInternal<V>(rootView: V, isDetail: Bool) where V: View {
       var controller = isDetail ? rootDetailViewController : rootViewController
+      var needsUpdate = false
       if let controller = controller as? UIHostingController<V> {
         controller.rootView = rootView
       } else {
         controller = UIHostingController<V>(rootView: rootView)
+        needsUpdate = true
       }
       if isDetail {
         rootDetailViewController = controller
       } else {
         rootViewController = controller
+      }
+      if needsUpdate {
+        updateCurrentViewControllers()
       }
     }
 
@@ -148,7 +156,7 @@
       } else {
         self.stackItems = newStackItems
       }
-      updateNavigation()
+      updateCurrentViewControllers()
     }
 
     private func updateOptions(_ options: StackNavigationOptions) {
@@ -160,8 +168,8 @@
       self.navigationController?.navigationBar.tintColor = options.barTintColor
       self.showSplitViewDisplayModeButton = options.showSplitViewDisplayModeButton
     }
-
-    func updateNavigation() {
+    
+    func updateCurrentViewControllers() {
       guard let rootViewController = rootViewController else { return }
       var viewControllers: [UIViewController] =
         [rootViewController]
@@ -169,22 +177,29 @@
           self.viewControllersByPath[$0.path]
         }
 
-      self.updateOptions(options)
       if let rootDetailViewController = rootDetailViewController {
         viewControllers.append(rootDetailViewController)
         viewControllers.append(contentsOf: detailStackItems.compactMap { self.viewControllersByPath[$0.path] })
+      }
+      self.currentViewControllers = viewControllers
+      updateNavigation()
+    }
+
+    func updateNavigation() {
+      guard navigationController?.viewControllers != currentViewControllers else {
+        return
+      }
+      
+      self.updateOptions(options)
+      if rootDetailViewController != nil {
         self.updateOptions(detailOptions)
       }
 
-      if navigationController?.viewControllers == viewControllers {
-        return
-      }
-
-      let animate = viewControllers.count > 1 && self.animate
-      if let nextViewController = viewControllers.last {
+      let animate = currentViewControllers.count > 1 && self.animate
+      if let nextViewController = currentViewControllers.last {
         prerenderViewController(viewController: nextViewController)
       }
-      navigationController?.setViewControllers(viewControllers, animated: animate)
+      navigationController?.setViewControllers(currentViewControllers, animated: animate)
     }
 
     private func updateSplitNavigationDisplayModeButton() {

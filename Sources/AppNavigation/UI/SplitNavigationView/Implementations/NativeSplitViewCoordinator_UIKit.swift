@@ -43,9 +43,9 @@
       updateDetailContent()
       if self.splitViewController?.viewControllers.count == 0 {
         self.splitViewController?.viewControllers = [masterViewController!, detailViewController!]
+        masterViewController?.view.layoutIfNeeded()
+        detailViewController?.view.layoutIfNeeded()
       }
-      masterViewController?.view.layoutSubviews()
-      detailViewController?.view.layoutSubviews()
     }
 
     private func updateMasterContent(masterContent: MasterContent) {
