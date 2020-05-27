@@ -423,14 +423,14 @@ The resolver will also notify the routing system that navigation has completed i
     }
     ```
 1. As an extra feature, you may want to cache each tab's route. This allows a user to switch between them without losing their place. You can do this with a simple action in an `onAppear` closure.
-```swift
-TabView(selection:selection) {
-  content.waypoint(with: info.nextWaypoint)
-}
-.onAppear {
-  dispatch(info.waypoint.beginCaching())
-}
-```
+    ```swift
+    TabView(selection:selection) {
+      content.waypoint(with: info.nextWaypoint)
+    }
+    .onAppear {
+      dispatch(info.waypoint.beginCaching())
+    }
+    ```
 
 1. Here's the completed code for a simple tab navigation view:
     ```Swift
@@ -452,6 +452,7 @@ TabView(selection:selection) {
           content: waypointContents
         )
       }
+
       func waypointContents(info: ResolvedWaypointInfo) -> some View {
         let selection = selectionBinding(with: info.waypoint, pathParameter: info.pathParameter ?? initialTab)
         return TabView(selection:selection) {
