@@ -95,10 +95,10 @@ public struct Waypoint: Equatable {
   ///   - skipIfAncestor: Prevents the route from changing if the next path is an ancestor.
   ///   - animate: Animate the anvigation.
   /// - Returns: A navigation action.
-  public func navigate<T>(to path: T, inScene scene: String? = nil, isDetail isDetailOverride: Bool? = nil, skipIfAncestor: Bool = false, animate: Bool = true)
+  public func navigate<T>(to path: T? = nil, inScene scene: String? = nil, isDetail isDetailOverride: Bool? = nil, skipIfAncestor: Bool = false, animate: Bool = true)
     -> ActionPlan<NavigationStateRoot> where T: LosslessStringConvertible
   {
-    let path = String(path)
+    let path = path.flatMap { String($0) } ?? "."
     let isDetailForPath = isDetailOverride ?? self.isDetail
     guard let absolutePath = standardizedPath(forPath: path, notRelative: isDetailForPath != isDetail) else {
       return ActionPlan { _ in }

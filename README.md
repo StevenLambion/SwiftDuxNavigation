@@ -147,8 +147,47 @@ dispatch(waypoint.navigate(to: "/person/\(id)/company"))
 dispatch(waypoint.navigate(to: id, isDetail: true) { Text("Label") }
 ```
 
+Navigating with a waypoint can be useful in situations where the route should change by a selection, such as in a list. You can add an action binding that automatically performs navigation through selection. This is useful in master-detail scenarios when the selected row should be highlighted.
+```swift
+struct Props: Equatable {
+  @ActionBinding var selectedId: Int?
+}
+
+func map(state: AppState, binder: ActionBinder) -> Props? {
+  let selectedId = waypoint.resolveComponent(in: state, isDetail: true, as: Int.self)
+  return Props(
+    selectedId: binder.bind(selectedId) { id in
+      self.waypoint.navigate(to: id, isDetail: true)
+    }
+  )
+}
+
+// On macOS, the List's selection property can be used:
+func body(props: Props) -> some View {
+  List(selection: props.$selectedId) {
+    ForEach(items) { item in
+      Text(item.name)
+    }
+  }
+}
+
+// On iOS, we need to manually set it because the selection binding
+// is for cell selection in edit mode. We also need to make the props 
+// variable modifiable to set the binding value even though selectedId's
+// setter doesn't actually mutate the struct.
+func body(props: Props) -> some View {
+  var props = props
+  return List {
+    ForEach(items) { item in
+      Button(item.name) { props.selectedId = item.path }
+      .listRowBackground(props.selectedId == item.id ? Color(white: 0.9) : nil)
+    }
+  }
+}
+```
+
 ### NavigationAction
-You can use the navigation actions directly if the above options aren't available. It also allows you to navigate by URL. This can be useful if the application has a custom url scheme that launches a new scene for a specific view.
+You can use the navigation actions directly if the above options aren't available. It also allows you to navigate by URL. This can be useful if the application has a custom URL scheme that launches a new scene for a specific view.
 
 ```swift
 @MappedDispatch() private var dispatch
@@ -200,7 +239,7 @@ StackNavigationView {
 }
 ```
 ### Static branching
-To add multiple branches to a route, use the `View.branch(_:isDefault:)` method. This gives the branches a name to specify the active one. Think of it as the `View.tag(_:)` method for a `TabView`. In cases where a branch isn't specified, the application can redirect to a default one.
+You can add multiple branches to a route. If a path parameter isn't accepted, they will simply match the route's path component to their name. The first matching branch will be displayed.
 
 ```swift
 StackNavigationView {
@@ -228,25 +267,25 @@ Dynamic stack items pass their last path component to their contents as a path p
 ```swift
 StackNavigationView {
   List {
-    ForEach(items) { item in
-      RouteLink(path: "\(item.id)/companies") {
+    ForEach(companies) { company in
+      RouteLink(path: "companies/\(company.id)") {
         PersonRow(item)
       }
     }
   }
-  .stackItem { id in
-    Overview(id: id)
+  .stackItem("stocks") { id in
+    StocksOverviewContainer(id: id)
   }
-  .stackItem("contact") { id in
-    ContactDetails(id: id)
+  .stackItem("news") { id in
+    NewsFeedContainer(id: id)
   }
   .stackItem("companies") { id in
-    CompanyDetails(id: id)
+    CompanyOverviewContainer(id: id)
   }
 }
 
 // In a view somewhere else: 
-RouteLink(path: "/people/\(person.id)/companies/\(company.id)") {
+RouteLink(path: "/news/\(newsFeed.id)") {
   Text(Person.fullname)
 }
 ```
