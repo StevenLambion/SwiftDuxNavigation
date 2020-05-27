@@ -325,7 +325,7 @@ TabNavigationView(initialTab: "allMusic") {
     Image(systemName: "rectangle.stack")
     Text("Albums")
   }
-  PlaylistsContainer("Aw, no playists.").tabItem("playlists") {
+  PlaylistsContainer().tabItem("playlists") {
     Image(systemName: "music.note.list")
     Text("Playlists")
   }
@@ -333,31 +333,32 @@ TabNavigationView(initialTab: "allMusic") {
 ```
 
 ## Custom navigational view
-The `WaypointResolver` is the primary mechanism to build a new navigational view. There's also the `WaypointResolverView` and `WaypointResolverViewModifier` as conveniences. The resolver requires the name of the waypoint and if it should handle a dynamic path parameter. Waypoints may have a name, a dynamic path parameter, or both.
+The `WaypointResolver` is the primary mechanism to build a new navigational view. There's also the `WaypointResolverView` and `WaypointResolverViewModifier` as conveniences. The resolver requires the name of the waypoint and whether or not it should handle a dynamic path parameter. Waypoints may have either a name, a dynamic path parameter, or both.
 
-They use this information to watch the current routing of the application. Their name and dynamic path parameter become segments within the expected path of the route. The `WaypointResolver` will notify the navigation view when it becomes active, and pass any useful information to it such as the value of its path parameter.
+They use this information to watch the current routing of the application. Their name and dynamic path parameter become segments within the expected path of the route. The `WaypointResolver` will provide information to its contents such as when it becomes active.
 
-The resolver will also notify the routing system if navigation has completed. This indicates that all waypoints were properly resolved. If a route ever fails to complete, the `NavigationMiddleware` will redirect back to the root of the application. This is the default functionality, and can be overridden.
+The resolver will also notify the routing system that navigation has completed if it happens to be the final destination. This indicates that all waypoints were properly resolved. If a route ever fails to complete, the `NavigationMiddleware` will redirect back to the root of the application. This is the default functionality, and can be overridden.
 
-1. To begin, create a new view. Add the `WaypointResolver` to the body, and provide a variable to allow an optional name for the waypoint.
+1. As a basic example, we'll create a new tab-based navigation view. Add the `WaypointResolver` to the body of the view.
     ```Swift
     struct MyTabNavigationView: View {
-      var name: String?
 
       var body: some View {
-        WaypointResolver(name: name)
+        WaypointResolver()
       }
     }
     ```
 
-1. Because the tab view needs a dynamic path parameter, let's enable it. We should also have a default tab selected. The resolver allows you to specify a default path parameter value.
+1. Because the tab view needs a dynamic path parameter, let's enable it. We should also have a default tab selected. The resolver allows you to specify a default path parameter value. A name for the waypoint isn't specified because we'll just use the path parameter to represent the tab navigation.
     ```Swift
     struct MyTabNavigationView: View {
-      var name: String?
       var initialTab: String
 
       var body: some View {
-        WaypointResolver(name: name, hasPathParameter: true, defaultPathParameter: initialTab)
+        WaypointResolver(
+          hasPathParameter: true, 
+          defaultPathParameter: initialTab
+        )
       }
     }
     ```
@@ -365,12 +366,10 @@ The resolver will also notify the routing system if navigation has completed. Th
 1. Let's implement a new function that handles the results of the resolver. We also need to provide the tab view's contents, so we'll add another variable called `content`. Add an init method to allow the content to be built with a `ViewBuilder`.
     ```Swift
     struct MyTabNavigationView<Content>: View where Content: View {
-      var name: String?
       var initialTab: String
       var content: Content
 
-      init(name: String?, initialTab: String, @ViewBuilder content: () -> Content) {
-        self.name = name
+      init(initialTab: String, @ViewBuilder content: () -> Content) {
         self.initialTab = initialTab
         self.content = content()
       }
@@ -380,11 +379,11 @@ The resolver will also notify the routing system if navigation has completed. Th
           name: name,
           hasPathParameter: true,
           defaultPathParameter: initialTab,
-          content: tabViewContents
+          content: waypointContents
         )
       }
 
-      func tabViewContents(info: ResolvedWaypointInfo) -> some View {
+      func waypointContents(info: ResolvedWaypointInfo) -> some View {
         TabView { content }
       }
     }
@@ -407,50 +406,59 @@ The resolver will also notify the routing system if navigation has completed. Th
     }
     ```
 
-1. We call the new method to get the selection binding using `info.waypoint` and `info.pathParameter`. This is the waypoint that the the view represents.
+1. We call the new method to get the selection binding using `info.waypoint` and `info.pathParameter`. This waypoint represents the tab navigation view itself.
     ```Swift
-    func tabViewContents(info: ResolvedWaypointInfo) -> some View {
+    func waypointContents(info: ResolvedWaypointInfo) -> some View {
       let selection = selectionBinding(with: info.waypoint, pathParameter: info.pathParameter ?? initialTab)
       return TabView(selection: selection) { content }
     }
     ```
-1. The last requirement is to pass down the next waypoint to its children. The `info.nextWaypoint` represents the name and path parameter of this new tab navigation view. Child waypoints will use it as a starting point for their own route.
+1. The last requirement is to pass down the next waypoint to its children. The `info.nextWaypoint` is extended from `info.waypoint` by including the path parameter. Child waypoints will use it as a starting point for their own route.
     ```Swift
-    func tabViewContents(info: ResolvedWaypointInfo) -> some View {
+    func waypointContents(info: ResolvedWaypointInfo) -> some View {
       let selection = selectionBinding(with: info.waypoint, pathParameter: info.pathParameter ?? initialTab)
       return TabView(selection: selection) { 
         content.waypoint(with: info.nextWaypoint)
       }
     }
     ```
+1. As an extra feature, you may want to cache each tab's route. This allows a user to switch between them without losing their place. You can do this with a simple action in an `onAppear` closure.
+```swift
+TabView(selection:selection) {
+  content.waypoint(with: info.nextWaypoint)
+}
+.onAppear {
+  dispatch(info.waypoint.beginCaching())
+}
+```
 
 1. Here's the completed code for a simple tab navigation view:
     ```Swift
     struct MyTabNavigationView<Content>: View where Content: View {
       @MappedDispatch() private var dispatch
       
-      var name: String?
       var initialTab: String
       var content: Content
 
-      init(name: String?, initialTab: String, @ViewBuilder content: () -> Content) {
-        self.name = name
+      init(initialTab: String, @ViewBuilder content: () -> Content) {
         self.initialTab = initialTab
         self.content = content()
       }
 
       var body: some View {
         WaypointResolver(
-          name: name,
           hasPathParameter: true,
           defaultPathParameter: initialTab,
-          content: tabViewContents
+          content: waypointContents
         )
       }
-      func tabViewContents(info: ResolvedWaypointInfo) -> some View {
+      func waypointContents(info: ResolvedWaypointInfo) -> some View {
         let selection = selectionBinding(with: info.waypoint, pathParameter: info.pathParameter ?? initialTab)
         return TabView(selection:selection) {
           content.waypoint(with: info.nextWaypoint)
+        }
+        .onAppear {
+          dispatch(info.waypoint.beginCaching())
         }
       }
 
