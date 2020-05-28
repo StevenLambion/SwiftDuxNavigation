@@ -13,7 +13,8 @@
       StackItemCard(stackItem: createStackItem(info: info), childPreference: childPreference, animate: info.animate, content: content)
     }
 
-    private func createStackItem(info: ResolvedWaypointInfo) -> StackItem {
+    private func createStackItem(info: ResolvedWaypointInfo) -> StackItem? {
+      guard info.active else { return nil }
       let waypoint = info.nextWaypoint
       return StackItem(
         path: waypoint.path,

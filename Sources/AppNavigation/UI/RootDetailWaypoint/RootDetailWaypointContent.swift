@@ -6,10 +6,12 @@ import SwiftUI
 /// Navigation views may access the environment value to handle the detail route.
 public struct RootDetailWaypointContent {
   public var waypoint: Waypoint
+  public var animate: Bool
   public var view: AnyView
 
-  init<Content>(waypoint: Waypoint, content: Content) where Content: View {
+  init<Content>(waypoint: Waypoint, animate: Bool, content: Content) where Content: View {
     self.waypoint = waypoint
+    self.animate = animate
     self.view = AnyView(content)
   }
 }

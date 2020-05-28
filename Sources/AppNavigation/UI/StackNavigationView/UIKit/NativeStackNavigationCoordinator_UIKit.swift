@@ -90,7 +90,8 @@
             self?.updatePreferences(preference: $0, isDetail: false)
           }
           .clearDetailItem(),
-        isDetail: false
+        isDetail: false,
+        animate: animate
       )
     }
 
@@ -105,12 +106,13 @@
             self?.updatePreferences(preference: $0, isDetail: true)
           }
           .clearDetailItem(),
-        isDetail: true
+        isDetail: true,
+        animate: content?.animate ?? animate
       )
       self.rootDetailPath = content?.waypoint.path
     }
 
-    private func setRootViewInternal<V>(rootView: V, isDetail: Bool) where V: View {
+    private func setRootViewInternal<V>(rootView: V, isDetail: Bool, animate: Bool) where V: View {
       var controller = isDetail ? rootDetailViewController : rootViewController
       var needsUpdate = false
       if let controller = controller as? UIHostingController<V> {

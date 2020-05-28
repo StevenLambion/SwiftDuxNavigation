@@ -19,7 +19,11 @@ where T: LosslessStringConvertible & Equatable, DetailContent: View {
       .environment(
         \.rootDetailWaypointContent,
         activate
-          ? RootDetailWaypointContent(waypoint: info.nextWaypoint, content: detailContent(pathParameter!).waypoint(with: info.nextWaypoint))
+          ? RootDetailWaypointContent(
+            waypoint: info.nextWaypoint,
+            animate: info.animate,
+            content: detailContent(pathParameter!).waypoint(with: info.nextWaypoint)
+          )
           : rootDetailWaypointContent
       )
   }

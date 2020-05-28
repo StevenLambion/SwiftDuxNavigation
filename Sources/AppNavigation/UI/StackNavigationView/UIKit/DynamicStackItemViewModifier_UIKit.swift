@@ -14,7 +14,10 @@
     }
 
     private func createStackItem(info: ResolvedWaypointInfo) -> StackItem? {
-      guard let pathParameter = info.pathParameter(as: T.self) else {
+      guard
+        info.active,
+        let pathParameter = info.pathParameter(as: T.self)
+      else {
         return nil
       }
       let waypoint = info.nextWaypoint

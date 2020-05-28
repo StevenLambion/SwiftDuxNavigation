@@ -16,7 +16,7 @@ internal struct RootDetailWaypointViewModifier<DetailContent>: WaypointResolverV
       .environment(
         \.rootDetailWaypointContent,
         activate
-          ? RootDetailWaypointContent(waypoint: info.nextWaypoint, content: detailContent.waypoint(with: info.nextWaypoint))
+          ? RootDetailWaypointContent(waypoint: info.nextWaypoint, animate: info.animate, content: detailContent.waypoint(with: info.nextWaypoint))
           : rootDetailWaypointContent
       )
   }
