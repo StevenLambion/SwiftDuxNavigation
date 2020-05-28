@@ -42,7 +42,7 @@
     var waypoint: Waypoint
     var detailContent: RootDetailWaypointContent?
     var animate: Bool
-    
+
     private var rootViewController: UIViewController?
     private var rootDetailViewController: UIViewController?
     private var rootDetailPath: String?
@@ -75,9 +75,9 @@
       self.dispatch = dispatch
       self.waypoint = waypoint
       self.animate = animate
-      
+
       super.init()
-      
+
       setRootView(rootView: rootView)
       setRootDetailView(content: detailContent)
     }
@@ -168,7 +168,7 @@
       self.navigationController?.navigationBar.tintColor = options.barTintColor
       self.showSplitViewDisplayModeButton = options.showSplitViewDisplayModeButton
     }
-    
+
     func updateCurrentViewControllers() {
       guard let rootViewController = rootViewController else { return }
       var viewControllers: [UIViewController] =
@@ -189,7 +189,7 @@
       guard navigationController?.viewControllers != currentViewControllers else {
         return
       }
-      
+
       self.updateOptions(options)
       if rootDetailViewController != nil {
         self.updateOptions(detailOptions)

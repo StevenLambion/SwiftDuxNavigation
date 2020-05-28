@@ -42,6 +42,7 @@
         context.coordinator.animate = animate
         context.coordinator.setRootView(rootView: rootView)
         context.coordinator.setRootDetailView(content: rootDetailWaypointContent)
+        context.coordinator.updateCurrentViewControllers()
       }
 
       func makeCoordinator() -> StackNavigationCoordinator {
