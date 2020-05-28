@@ -12,7 +12,7 @@
       self.viewController = viewController
     }
 
-    init<V>(path: String, fromBranch: Bool = false, view: V) where V: View {
+    init<V>(path: String, view: V) where V: View {
       self.init(
         path: path,
         viewController: UIHostingController(rootView: view)
@@ -35,7 +35,7 @@
         navigationController?.interactivePopGestureRecognizer?.delegate = self
         navigationController?.interactivePopGestureRecognizer?.isEnabled = true
         navigationController?.navigationBar.prefersLargeTitles = true
-        updateNavigation()
+        updateNavigation(animate: animate)
       }
     }
 
@@ -84,16 +84,12 @@
 
     func setRootView<Content>(rootView: Content?) where Content: View {
       self.setRootViewInternal(
-        rootView: (rootView
+        rootView:
+          rootView
           .onPreferenceChange(StackNavigationPreferenceKey.self) { [weak self] in
-            self?.options = $0
+            self?.updatePreferences(preference: $0, isDetail: false)
           }
-          .onPreferenceChange(StackItemPreferenceKey.self) { [weak self] in
-            self?.updateStackItems($0, isDetail: false)
-          }
-          // Don't let parent navigation views use the routes.
-          .preference(key: StackItemPreferenceKey.self, value: [])
-          .clearDetailItem()),
+          .clearDetailItem(),
         isDetail: false
       )
     }
@@ -104,16 +100,11 @@
         return
       }
       self.setRootViewInternal(
-        rootView: (content?.view
+        rootView: content?.view
           .onPreferenceChange(StackNavigationPreferenceKey.self) { [weak self] in
-            self?.detailOptions = $0
+            self?.updatePreferences(preference: $0, isDetail: true)
           }
-          .onPreferenceChange(StackItemPreferenceKey.self) { [weak self] in
-            self?.updateStackItems($0, isDetail: true)
-          }
-          // Don't let parent navigation views use the routes.
-          .preference(key: StackItemPreferenceKey.self, value: [])
-          .clearDetailItem()),
+          .clearDetailItem(),
         isDetail: true
       )
       self.rootDetailPath = content?.waypoint.path
@@ -134,11 +125,20 @@
         rootViewController = controller
       }
       if needsUpdate {
-        updateCurrentViewControllers()
+        updateCurrentViewControllers(animate: animate)
       }
     }
 
-    private func updateStackItems(_ newStackItems: [StackItem], isDetail: Bool) {
+    private func updatePreferences(preference: StackNavigationPreference, isDetail: Bool) {
+      if isDetail {
+        self.detailOptions = preference.options
+      } else {
+        self.options = preference.options
+      }
+      updateStackItems(preference.stack, isDetail: isDetail, animate: preference.animate)
+    }
+
+    private func updateStackItems(_ newStackItems: [StackItem], isDetail: Bool, animate: Bool) {
       let stackItems = isDetail ? self.detailStackItems : self.stackItems
       let newStackItemByPath = Set(newStackItems.map(\.path))
       stackItems.forEach {
@@ -147,7 +147,7 @@
         }
       }
       newStackItems.forEach {
-        if viewControllersByPath[$0.path] == nil {
+        if viewControllersByPath[$0.path] == nil && $0.path.starts(with: waypoint.path) {
           viewControllersByPath[$0.path] = $0.viewController
         }
       }
@@ -156,7 +156,7 @@
       } else {
         self.stackItems = newStackItems
       }
-      updateCurrentViewControllers()
+      updateCurrentViewControllers(animate: animate)
     }
 
     private func updateOptions(_ options: StackNavigationOptions) {
@@ -169,7 +169,7 @@
       self.showSplitViewDisplayModeButton = options.showSplitViewDisplayModeButton
     }
 
-    func updateCurrentViewControllers() {
+    func updateCurrentViewControllers(animate: Bool) {
       guard let rootViewController = rootViewController else { return }
       var viewControllers: [UIViewController] =
         [rootViewController]
@@ -182,24 +182,24 @@
         viewControllers.append(contentsOf: detailStackItems.compactMap { self.viewControllersByPath[$0.path] })
       }
       self.currentViewControllers = viewControllers
-      updateNavigation()
+      updateNavigation(animate: animate)
     }
 
-    func updateNavigation() {
-      guard navigationController?.viewControllers != currentViewControllers else {
-        return
-      }
-
+    func updateNavigation(animate: Bool) {
       self.updateOptions(options)
       if rootDetailViewController != nil {
         self.updateOptions(detailOptions)
       }
-
-      let animate = currentViewControllers.count > 1 && self.animate
+      guard navigationController?.viewControllers != currentViewControllers else {
+        return
+      }
       if let nextViewController = currentViewControllers.last {
         prerenderViewController(viewController: nextViewController)
       }
-      navigationController?.setViewControllers(currentViewControllers, animated: animate)
+      navigationController?.setViewControllers(
+        currentViewControllers,
+        animated: currentViewControllers.count > 1 && animate
+      )
     }
 
     private func updateSplitNavigationDisplayModeButton() {
@@ -221,6 +221,7 @@
     /// of UIHostingView crashes if it's called
     /// - Parameter viewController: The view controller.
     private func prerenderViewController(viewController: UIViewController) {
+      guard viewController.navigationController == nil else { return }
       guard viewController.splitViewController == nil else { return }
       if viewController.parent == nil {
         navigationController?.addChild(viewController)
@@ -262,7 +263,13 @@
       if let path = path, let stackItem = (stackItems + detailStackItems).last {
         if stackItem.path != path {
           viewControllersByPath[stackItem.path] = nil
-          dispatch(waypoint.navigate(to: path, isDetail: !detailStackItems.isEmpty, animate: false))
+          dispatch(
+            waypoint.navigate(
+              to: path,
+              isDetail: detailStackItems.isEmpty ? waypoint.isDetail : true,
+              animate: false
+            )
+          )
           dispatch(waypoint.completeNavigation())
         }
       }

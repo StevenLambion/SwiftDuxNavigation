@@ -12,18 +12,12 @@
     var showSplitViewDisplayModeButton: Bool = false
   }
 
-  internal final class StackNavigationPreferenceKey: PreferenceKey {
-    static var defaultValue = StackNavigationOptions()
-
-    static func reduce(value: inout StackNavigationOptions, nextValue: () -> StackNavigationOptions) {
-      value = nextValue()
-    }
-  }
-
   extension View {
-
-    internal func stackNavigationPreference(_ updater: @escaping (inout StackNavigationOptions) -> Void) -> some View {
-      self.transformPreference(StackNavigationPreferenceKey.self, updater)
+    internal func stackNavigationOptionPreference(_ updater: @escaping (inout StackNavigationOptions) -> Void) -> some View {
+      transformPreference(StackNavigationPreferenceKey.self) {
+        updater(&$0.options)
+        $0.optionTransformers.append(updater)
+      }
     }
 
     /// Navigate back in a stack navigation view using a swipe gesture.
@@ -31,7 +25,7 @@
     /// - Parameter enabled: Is enabled
     /// - Returns: The view.
     public func enableSwipeNavigation(_ enabled: Bool) -> some View {
-      self.stackNavigationPreference { $0.swipeGesture = enabled }
+      self.stackNavigationOptionPreference { $0.swipeGesture = enabled }
     }
 
     /// Hide the navigation bar conditionally.
@@ -42,12 +36,12 @@
     ///   - onVerticallyCompact: When the view is vertically compact.
     ///   - onKeyboardAppears: When the keyboard appears.
     /// - Returns: The view.
-    public func hideNavigationBar(onTap: Bool = false, onSwipe: Bool = false, onVerticallyCompact: Bool = false, onKeyboardAppears: Bool = false) -> some View {
-      self.stackNavigationPreference {
-        $0.hideBarsOnTap = onTap
-        $0.hideBarsOnSwipe = onSwipe
-        $0.hidesBarsWhenVerticallyCompact = onVerticallyCompact
-        $0.hidesBarsWhenKeyboardAppears = onKeyboardAppears
+    public func hideNavigationBar(onTap: Bool? = nil, onSwipe: Bool? = nil, onVerticallyCompact: Bool? = nil, onKeyboardAppears: Bool? = nil) -> some View {
+      self.stackNavigationOptionPreference {
+        $0.hideBarsOnTap = onTap ?? $0.hideBarsOnTap
+        $0.hideBarsOnSwipe = onSwipe ?? $0.hideBarsOnSwipe
+        $0.hidesBarsWhenVerticallyCompact = onVerticallyCompact ?? $0.hidesBarsWhenVerticallyCompact
+        $0.hidesBarsWhenKeyboardAppears = onKeyboardAppears ?? $0.hidesBarsWhenKeyboardAppears
       }
     }
 
@@ -56,7 +50,7 @@
     /// - Parameter color: The tint color.
     /// - Returns: The view.
     public func stackNavigationBarTintColor(_ color: UIColor) -> some View {
-      self.stackNavigationPreference {
+      self.stackNavigationOptionPreference {
         $0.barTintColor = color
       }
     }
@@ -66,7 +60,7 @@
     /// - Parameter enabled: enable to replace the root view.
     /// - Returns: The view.
     public func showSplitViewDisplayModeButton(_ enabled: Bool) -> some View {
-      self.stackNavigationPreference {
+      self.stackNavigationOptionPreference {
         $0.showSplitViewDisplayModeButton = enabled
       }
     }

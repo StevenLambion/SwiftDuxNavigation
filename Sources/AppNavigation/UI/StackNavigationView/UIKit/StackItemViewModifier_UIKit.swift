@@ -3,39 +3,29 @@
   import SwiftDux
   import SwiftUI
 
-  internal struct StackItemViewModifier<StackItemContent>: WaypointResolverViewModifier where StackItemContent: View {
+  internal struct StackItemViewModifier<StackItemContent> where StackItemContent: View {
     var name: String?
     var stackItemContent: StackItemContent
 
-    @State private var childStackItems: [StackItem] = []
-    @State private var stackNavigationOptions: StackNavigationOptions? = nil
+    @State private var childPreference = StackNavigationPreference()
 
     public func body(content: Content, info: ResolvedWaypointInfo) -> some View {
-      content
-        .stackItemPreference(info.active ? createStackItem(info: info) : childStackItems)
-        .stackNavigationPreference {
-          guard let options = self.stackNavigationOptions else { return }
-          $0 = options
-        }
+      StackItemCard(stackItem: createStackItem(info: info), childPreference: childPreference, animate: info.animate, content: content)
     }
 
-    private func createStackItem(info: ResolvedWaypointInfo) -> [StackItem] {
+    private func createStackItem(info: ResolvedWaypointInfo) -> StackItem {
       let waypoint = info.nextWaypoint
-      var stackItems = childStackItems
-      let newStackItem = StackItem(
+      return StackItem(
         path: waypoint.path,
         view:
           stackItemContent
           .waypoint(with: waypoint)
-          .onPreferenceChange(StackItemPreferenceKey.self) {
-            self.childStackItems = $0
-          }
           .onPreferenceChange(StackNavigationPreferenceKey.self) {
-            self.stackNavigationOptions = $0
+            self.childPreference = $0
           }
       )
-      stackItems.append(newStackItem)
-      return stackItems
     }
   }
+
+  extension StackItemViewModifier: WaypointResolverViewModifier {}
 #endif
