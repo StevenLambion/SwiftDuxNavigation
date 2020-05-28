@@ -11,37 +11,20 @@ SwiftDux Navigation implements deep-link routing for SwiftUI applications. It's 
 The purpose of this library is to provide a stateful, deep-link navigational system for an application. In the same way that SwiftUI views represent the application's current state, it does the same for navigation. The library implements this through a single navigational state object. This state is updated through a reducer function. The changes from the navigational state are then propagated throughout the SwiftUI view hierarchy.
 
 ## Features
-- Path-based navigation
-- Master-detail routing
-- URL support
-- Multi-UIScene support
+- Path-based routing
+- Built-in stack, split, and tab navigational views.
 - API to build custom navigation views.
-- Save and restore the navigation via `PersistStateMiddleware`.
+- Save and restore the navigation state.
+- Multi-UIScene support
+- URL deep-link support
 
-## Navigation Views
-- [SplitNavigationView](##split-navigation)
-  - Uses UISplitNavigationController on iOS.
-    - Automatically handles the collapse and expand layouts.
-    - Show or hide the display mode button.
-  - Uses an HSplitView on macOS.
-- [StackNavigationView](##stack-navigation)
-  - Uses UINavigationController on iOS.
-    - Use gestures to navigate back or hide the navigation bar.
-    - Works with SwiftUI's navigation bar API.
-  - Pure-SwiftUI implementation is used on macOS.
-- [TabNavigationView](##tab-navigation)
-  - Thin wrapper over TabView.
-  - Automatically saves and restores tab routes.
+## Live example
 
-## Modals
-- `View.sheet(_:content:)` - Displays a sheet by name.
-- `View.actionSheet(_:content:)` - Displays an action sheet by name.
-- `View.alert(_:content:)` - Displays a an alert by name.
+[Checkout the SwiftDux Todo Example](https://github.com/StevenLambion/SwiftUI-Todo-Example/tree/swiftdux-navigation).
 
-## Extendability
-
-- `RouteReader` - Reads information about the current route and waypoint.
-- `WaypointResolver` - Resolves and manages a waypoint for a custom navigational view.
+<div style="text-align:center">
+  <img src="Images/todolist.png" width="900"/>
+</div>
 
 ## Getting started
 
