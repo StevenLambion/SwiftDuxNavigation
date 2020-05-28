@@ -3,49 +3,34 @@
   import SwiftDux
   import SwiftUI
 
-  internal struct DynamicStackItemViewModifier<T, StackItemContent>: WaypointResolverViewModifier
-  where T: LosslessStringConvertible & Equatable, StackItemContent: View {
-    static var hasPathParameter: Bool {
-      true
-    }
-
+  internal struct DynamicStackItemViewModifier<T, StackItemContent> where T: LosslessStringConvertible & Equatable, StackItemContent: View {
     var name: String?
     var stackItemContent: (T) -> StackItemContent
 
-    @State private var childStackItems: [StackItem] = []
-    @State private var stackNavigationOptions: StackNavigationOptions? = nil
+    @State private var childPreference = StackNavigationPreference()
 
     public func body(content: Content, info: ResolvedWaypointInfo) -> some View {
-      content
-        .stackItemPreference(info.active ? createStackItem(info: info) : childStackItems)
-        .stackNavigationPreference {
-          guard let options = self.stackNavigationOptions else { return }
-          $0 = options
-        }
+      StackItemCard(stackItem: createStackItem(info: info), childPreference: childPreference, animate: info.animate, content: content)
     }
 
-    private func createStackItem(info: ResolvedWaypointInfo) -> [StackItem] {
-      var stackItems = childStackItems
+    private func createStackItem(info: ResolvedWaypointInfo) -> StackItem? {
       guard let pathParameter = info.pathParameter(as: T.self) else {
-        return stackItems
+        return nil
       }
       let waypoint = info.nextWaypoint
-      let newStackItem = StackItem(
+      return StackItem(
         path: waypoint.path,
-        fromBranch: false,
         view: stackItemContent(pathParameter)
           .waypoint(with: waypoint)
-          .onPreferenceChange(StackItemPreferenceKey.self) {
-            self.childStackItems = $0
-          }
           .onPreferenceChange(StackNavigationPreferenceKey.self) {
-            self.stackNavigationOptions = $0
+            self.childPreference = $0
           }
       )
-
-      stackItems.insert(newStackItem, at: 0)
-      return stackItems
     }
+  }
+
+  extension DynamicStackItemViewModifier: WaypointResolverViewModifier {
+    static var hasPathParameter: Bool { true }
   }
 
 #endif
