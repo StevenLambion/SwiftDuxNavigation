@@ -17,6 +17,9 @@
     private var masterViewController: UIViewController?
     private var detailViewController: UIViewController?
 
+    private var masterPreference: SplitNavigationPreference = SplitNavigationPreference()
+    private var detailPreference: SplitNavigationPreference = SplitNavigationPreference()
+
     init(
       rootDetailWaypointContent: RootDetailWaypointContent?,
       waypoint: Waypoint,
@@ -30,14 +33,6 @@
       self.setMasterContent(masterContent)
     }
 
-    func updateOptions(options: SplitNavigationOptions) {
-      self.splitViewController?.preferredDisplayMode = options.preferredDisplayMode
-      self.splitViewController?.preferredPrimaryColumnWidthFraction = options.preferredPrimaryColumnWidthFraction
-      self.splitViewController?.presentsWithGesture = options.presentsWithGesture
-      self.splitViewController?.primaryEdge = options.primaryEdge
-      self.splitViewController?.primaryBackgroundStyle = options.primaryBackgroundStyle
-    }
-
     func setMasterContent(_ masterContent: MasterContent) {
       updateMasterContent(masterContent: masterContent)
       updateDetailContent()
@@ -49,19 +44,19 @@
     }
 
     private func updateMasterContent(masterContent: MasterContent) {
-      let masterContent = masterContent.onPreferenceChange(SplitNavigationPreferenceKey.self) { [weak self] in
-        self?.updateOptions(options: $0)
-      }
       let includeDetail = isCollapsed && rootDetailWaypointContent != nil && rootDetailWaypointContent?.waypoint.path != "/"
       let nextDetailWaypointContent =
         includeDetail
         ? rootDetailWaypointContent
         : nil
-      updateMasterViewController(
-        content: StackNavigationView { masterContent }
-          .id(waypoint.path + "@split-navigation-master")
-          .environment(\.rootDetailWaypointContent, nextDetailWaypointContent)
-      )
+      let masterContent = StackNavigationView {
+        masterContent.onPreferenceChange(SplitNavigationPreferenceKey.self) { [weak self] in
+          self?.updatePreference(preference: $0, isDetail: false)
+        }
+      }
+      .id(waypoint.path + "@split-navigation-master")
+      .environment(\.rootDetailWaypointContent, nextDetailWaypointContent)
+      updateMasterViewController(content: masterContent)
     }
 
     private func updateMasterViewController<Content>(content: Content) where Content: View {
@@ -77,7 +72,9 @@
     private func updateDetailContent() {
       let detailContent = !isCollapsed ? self.rootDetailWaypointContent : nil
       let detailView = StackNavigationView {
-        detailContent?.view
+        detailContent?.view.onPreferenceChange(SplitNavigationPreferenceKey.self) { [weak self] in
+          self?.updatePreference(preference: $0, isDetail: true)
+        }
       }
       .waypoint(with: detailContent?.waypoint)
       .id(waypoint.path + "@split-navigation-detail")
@@ -94,6 +91,27 @@
           rootView: content
         )
       }
+    }
+
+    func updatePreference(preference: SplitNavigationPreference, isDetail: Bool) {
+      if isDetail {
+        detailPreference = preference
+      } else {
+        masterPreference = preference
+      }
+      updateOptions()
+    }
+
+    func updateOptions() {
+      var options = masterPreference.options
+      detailPreference.optionTransformers.forEach { updater in
+        updater(&options)
+      }
+      self.splitViewController?.preferredDisplayMode = options.preferredDisplayMode
+      self.splitViewController?.preferredPrimaryColumnWidthFraction = options.preferredPrimaryColumnWidthFraction
+      self.splitViewController?.presentsWithGesture = options.presentsWithGesture
+      self.splitViewController?.primaryEdge = options.primaryEdge
+      self.splitViewController?.primaryBackgroundStyle = options.primaryBackgroundStyle
     }
   }
 
