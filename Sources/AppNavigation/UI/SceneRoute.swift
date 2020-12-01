@@ -1,6 +1,12 @@
 import SwiftDux
 import SwiftUI
 
+fileprivate var sceneStore = Store(
+  state: SceneNavigationState(),
+  reducer: NavigationReducer(),
+  middleware: NavigationMiddleware()
+)
+
 /// Starts a new Route for a SwiftUI Scene.
 ///
 /// This view is meant to be placed at the root of a Scene and passed a store. It persists
@@ -9,18 +15,20 @@ import SwiftUI
 public struct SceneRoute<StateType, Content>: View where StateType: Equatable & NavigationStateRoot, Content: View {
   @Environment(\.actionDispatcher) private var dispatch
   @Environment(\.scenePhase) private var scenePhase
-  @SceneStorage("SceneRoute.routeStorage") private var routeStorageData: Data?
+  @SceneStorage("SceneRoute.routeStorage") private var routeStorageData = Data()
 
+  public var name: String
   public var store: Store<StateType>
-  public var name = UUID().uuidString
   public var content: Content
 
   /// Initiate a Route placed within a Scene.
   ///
   /// - Parameters:
+  ///   - name: An optional name of the route.
   ///   -  store: The store to be injected.
   ///   -  content: A closure that returns the content of the waypoint.
-  public init(store: Store<StateType>, @ViewBuilder content: () -> Content) {
+  public init(name: String? = nil, store: Store<StateType>, @ViewBuilder content: () -> Content) {
+    self.name = name ?? UUID().uuidString
     self.store = store
     self.content = content()
   }
@@ -29,6 +37,10 @@ public struct SceneRoute<StateType, Content>: View where StateType: Equatable & 
     Route(name: name) { content }
       .provideStore(store)
       .onChange(of: scenePhase, perform: onScenePhaseChange)
+      .onReceive(NotificationCenter.default.publisher(for: UIApplication.willTerminateNotification, object: nil)) { _ in
+        saveRoute()
+      }
+      .onAppear(perform: restoreRoute)
   }
 
   private func onScenePhaseChange(scenePhase: ScenePhase) {
@@ -43,25 +55,34 @@ public struct SceneRoute<StateType, Content>: View where StateType: Equatable & 
   }
 
   private func restoreRoute() {
-    guard let routeStorageData = routeStorageData,
-      let routeStorage = try? JSONDecoder().decode(RouteStorage.self, from: routeStorageData)
+    guard let routeStorage = try? JSONDecoder().decode(RouteStorage.self, from: routeStorageData)
     else { return }
 
-    dispatch(NavigationAction.addRoute(primary: routeStorage.primaryRoute, detail: routeStorage.detailRoute))
+    var primary: NavigationState.RouteState? = nil
+    var detail: NavigationState.RouteState? = nil
+
+    if store.state.navigation.primaryRouteByName[name] == nil {
+      primary = routeStorage.primaryRoute
+    }
+
+    if store.state.navigation.detailRouteByName[name] == nil {
+      detail = routeStorage.detailRoute
+    }
+
+    dispatch(NavigationAction.addRoute(primary: primary, detail: detail))
   }
 
   private func saveRoute() {
-    guard let primaryRoute = store.state.navigation.primaryRouteByName[name],
-      let detailRoute = store.state.navigation.detailRouteByName[name]
-    else { return }
-
     let routeStorage = RouteStorage(
-      primaryRoute: primaryRoute,
-      detailRoute: detailRoute
+      primaryRoute: store.state.navigation.primaryRouteByName[name] ?? NavigationState.RouteState(name: name),
+      detailRoute: store.state.navigation.detailRouteByName[name] ?? NavigationState.RouteState(name: name)
     )
 
-    self.routeStorageData = try? JSONEncoder().encode(routeStorage)
-    dispatch(NavigationAction.removeRoute(named: name))
+    self.$routeStorageData.wrappedValue = try! JSONEncoder().encode(routeStorage)
+
+    dispatch(
+      NavigationAction.removeRoute(named: name, isDetail: false) + NavigationAction.removeRoute(named: name, isDetail: true)
+    )
   }
 }
 
@@ -79,27 +100,7 @@ extension SceneRoute where StateType == SceneNavigationState {
   /// - Parameter content: The contents of the SceneRoute.
   public init(@ViewBuilder content: () -> Content) {
     self.init(
-      store: Store(
-        state: SceneNavigationState(),
-        reducer: NavigationReducer(),
-        middleware: NavigationMiddleware()
-      ),
-      content: content
-    )
-  }
-
-  /// Initiate a SceneRoute.
-  ///
-  /// - Parameters:
-  ///   - middleware: Extra middleware to provide to the internal navigation store.
-  ///   - content: The contents of the SceneRoute.
-  public init<M>(middleware: M, @ViewBuilder content: () -> Content) where M: Middleware, M.State == StateType {
-    self.init(
-      store: Store(
-        state: SceneNavigationState(),
-        reducer: NavigationReducer(),
-        middleware: NavigationMiddleware() + middleware
-      ),
+      store: sceneStore,
       content: content
     )
   }

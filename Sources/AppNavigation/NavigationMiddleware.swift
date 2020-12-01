@@ -72,8 +72,8 @@ extension NavigationMiddleware {
   ///   - error: The navigational error.
   ///   - message:The error message, useful for logging.
   public static func defaultErrorHandler(store: StoreProxy<State>, error: Error, message: String) {
-    routeCompletionFailedErrorHandler(store: store, error: error, message: message)
     printErrorHandler(store: store, error: error, message: message)
+    routeCompletionFailedErrorHandler(store: store, error: error, message: message)
   }
 
   /// Use as an error handler to redirect failed routes to the root path.
@@ -86,7 +86,7 @@ extension NavigationMiddleware {
     guard let error = error as? NavigationError else { return }
 
     if case .routeCompletionFailed(let routeName, let isDetail) = error {
-      store.send(NavigationAction.navigate(to: "/", inRoute: routeName, isDetail: isDetail))
+      store.send(NavigationAction.removeRoute(named: routeName, isDetail: isDetail))
     }
   }
 

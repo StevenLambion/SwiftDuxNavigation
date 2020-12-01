@@ -13,10 +13,10 @@ public enum NavigationAction: Action {
   case setError(Error, message: String)
 
   /// Add a route to the navigation state.
-  case addRoute(primary: NavigationState.RouteState, detail: NavigationState.RouteState)
+  case addRoute(primary: NavigationState.RouteState?, detail: NavigationState.RouteState?)
 
   /// Remove a route from the navigation state.
-  case removeRoute(named: String)
+  case removeRoute(named: String, isDetail: Bool)
 
   /// Begin routing to a new path.
   case beginRouting(path: String, routeName: String, isDetail: Bool, skipIfAncestor: Bool)
@@ -143,9 +143,7 @@ extension NavigationAction {
             errorAction = NavigationAction.setError(error, message: "Unknown error during route completion verification.")
           }
 
-          return Just(
-            errorAction + NavigationAction.completeRouting(routeName: routeName, isDetail: isDetail)
-          )
+          return Just(errorAction)
         }
     }
   }

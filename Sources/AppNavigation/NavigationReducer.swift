@@ -24,11 +24,18 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
         completeRouting(route: &route)
       }
     case .addRoute(let primary, let detail):
-      state.navigation.primaryRouteByName[primary.name] = primary
-      state.navigation.detailRouteByName[primary.name] = detail
-    case .removeRoute(let name):
-      state.navigation.primaryRouteByName.removeValue(forKey: name)
-      state.navigation.detailRouteByName.removeValue(forKey: name)
+      if let primary = primary {
+        state.navigation.primaryRouteByName[primary.name] = primary
+      }
+      if let detail = detail {
+        state.navigation.detailRouteByName[detail.name] = detail
+      }
+    case .removeRoute(let name, let isDetail):
+      if isDetail {
+        state.navigation.detailRouteByName.removeValue(forKey: name)
+      } else {
+        state.navigation.primaryRouteByName.removeValue(forKey: name)
+      }
     case .beginCaching(let path, let routeName, let isDetail, let policy):
       state = updateRoute(in: state, named: routeName, isDetail: isDetail) { route in
         beginCaching(forRoute: &route, withPath: path, policy: policy)
@@ -101,6 +108,7 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
     orderedLegPaths.append(nextLeg.path)
 
     route = NavigationState.RouteState(
+      name: route.name,
       path: path,
       legsByPath: legs,
       orderedLegPaths: orderedLegPaths,

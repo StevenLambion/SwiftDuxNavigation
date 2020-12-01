@@ -33,8 +33,8 @@ public struct NavigationState: Equatable, Codable {
   ///   - lastNavigationErrorMessage: The last error message received.
   public init(
     options: Options = Options(),
-    primaryRouteByName: [String: RouteState] = [defaultRouteName: RouteState()],
-    detailRouteByName: [String: RouteState] = [defaultRouteName: RouteState()],
+    primaryRouteByName: [String: RouteState] = [:],
+    detailRouteByName: [String: RouteState] = [:],
     lastNavigationError: NavigationError? = nil,
     lastNavigationErrorMessage: String? = nil
   ) {
