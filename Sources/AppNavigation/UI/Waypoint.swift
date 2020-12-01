@@ -1,31 +1,36 @@
+import Foundation
 import SwiftDux
 import SwiftUI
 
-/// A waypoint within a route.
+/// Represents the destination of a route leg.
+public struct Waypoint {
 
-/// The user is always within a single waypoint per route.
-public struct Waypoint: Equatable {
+  /// The route name.
+  public var routeName: String = NavigationState.defaultRouteName
 
-  /// The scene name.
-  public var sceneName: String = NavigationState.Scene.defaultName
-
-  /// The active path relative to the view.
+  /// The full path of the route leg when active.
   public var path: String = "/"
 
-  ///Is the waypoint in the detial route.
+  ///Indicates if the waypoint is on the detail route.
   public var isDetail: Bool = false
 
-  // Is the waypoint the root of the route.
-  public var isRoot: Bool {
-    path == "/"
-  }
+  /// Indicates if the waypoint is active.
+  @Binding public var isActive: Bool
 
-  /// Resolve the `Scene` relative to the view from the application state.
-  /// 
-  /// - Parameter state: The application state.
-  /// - Returns: The `Scene`.
-  public func resolveScene(in state: NavigationStateRoot) -> NavigationState.Scene? {
-    state.navigation.sceneByName[sceneName]
+  /// The destination name of the waypoint when the leg is active.
+  /// This may be a constant value or a dynamic parameter value depending on the type of destination.
+  @Binding public var destination: String?
+
+  /// Safely converts the destination string to the given type.
+  ///
+  /// If the binding cannot convert the value, it returns nil.
+  /// - Parameter type: The type
+  /// - Returns: The typed binding.
+  public func destination<T>(as type: T.Type) -> Binding<T?> where T: LosslessStringConvertible {
+    return Binding(
+      get: { T(destination ?? "") },
+      set: { $destination.wrappedValue = $0?.description }
+    )
   }
 
   /// Resolve the `Route` relative to the view from the application state.
@@ -34,12 +39,9 @@ public struct Waypoint: Equatable {
   ///   - state: The application state.
   ///   - isDetailOverride: Get the detail route.
   /// - Returns: The `Route`.
-  public func resolveRoute(in state: NavigationStateRoot, isDetail isDetailOverride: Bool? = nil) -> NavigationState.Route? {
+  public func resolveRouteState(in state: NavigationStateRoot, isDetail isDetailOverride: Bool? = nil) -> NavigationState.RouteState? {
     let isDetail = self.isDetail || isDetailOverride == true
-    if isDetail {
-      return resolveScene(in: state)?.detailRoute
-    }
-    return resolveScene(in: state)?.route
+    return isDetail ? state.navigation.detailRouteByName[routeName] : state.navigation.primaryRouteByName[routeName]
   }
 
   /// Resolve the `RouteLeg` relative to the view from the application state.
@@ -48,68 +50,45 @@ public struct Waypoint: Equatable {
   ///   - state: The application state.
   ///   - isDetailOverride: Get the detail route.
   /// - Returns: The `RouteLeg`.
-  public func resolveLeg(in state: NavigationStateRoot, isDetail isDetailOverride: Bool? = nil) -> NavigationState.RouteLeg? {
-    resolveRoute(in: state, isDetail: isDetailOverride)?.legsByPath[path]
-  }
-
-  /// Resolve the path component of the waypoint relative to the view from the application state.
-  ///
-  /// - Parameters:
-  ///   - state: The application state.
-  ///   - isDetailOverride: Get the detail route.
-  /// - Returns: The `RouteLeg`.
-  public func resolveComponent(in state: NavigationStateRoot, isDetail isDetailOverride: Bool? = nil) -> String? {
-    resolveLeg(in: state, isDetail: isDetailOverride)?.component
-  }
-
-  /// Resolve the path component of the waypoint relative to the view from the application state.
-  ///
-  /// - Parameters:
-  ///   - state: The application state.
-  ///   - isDetailOverride: Get the detail route.
-  ///   - type: The type to convert the component to.
-  /// - Returns: The `RouteLeg`.
-  public func resolveComponent<T>(in state: NavigationStateRoot, isDetail isDetailOverride: Bool? = nil, as type: T.Type) -> T?
-  where T: LosslessStringConvertible {
-    resolveLeg(in: state, isDetail: isDetailOverride).flatMap { T($0.component) }
-  }
-
-  /// Get the next Waypoint object for the provided component.
-  ///
-  /// - Parameter component: The next component.
-  /// - Returns: A new `Waypoint`
-  public func next<T>(with component: T) -> Waypoint where T: LosslessStringConvertible {
-    return Waypoint(
-      sceneName: sceneName,
-      path: "\(path)\(component)/",
-      isDetail: isDetail
-    )
+  public func resolveLegState(in state: NavigationStateRoot, isDetail isDetailOverride: Bool? = nil) -> NavigationState.RouteLeg? {
+    resolveRouteState(in: state, isDetail: isDetailOverride)?.legBySourcePath[path]
   }
 
   /// Navigate relative to current route.
   ///
   /// - Parameters:
   ///   - path: The path to navigate to.
-  ///   - scene: The scene to perform the navigation in.
+  ///   - routeName: The name of the route to navigate.
   ///   - isDetailOverride: Navigate in the detail route.
   ///   - skipIfAncestor: Prevents the route from changing if the next path is an ancestor.
-  ///   - animate: Animate the anvigation.
   /// - Returns: A navigation action.
   public func navigate<T>(
     to path: T? = nil,
-    inScene scene: String? = nil,
+    inRoute routeName: String? = nil,
     isDetail isDetailOverride: Bool? = nil,
-    skipIfAncestor: Bool = false,
-    animate: Bool = true
+    skipIfAncestor: Bool = false
   )
-    -> ActionPlan<NavigationStateRoot> where T: LosslessStringConvertible
+    -> Action where T: LosslessStringConvertible
   {
-    let path = path.flatMap { String($0) } ?? "."
+    let path = path.flatMap { $0.description } ?? "."
     let isDetailForPath = isDetailOverride ?? self.isDetail
     guard let absolutePath = standardizedPath(forPath: path, notRelative: isDetailForPath != isDetail) else {
-      return ActionPlan { _ in }
+      return EmptyAction()
     }
-    return NavigationAction.navigate(to: absolutePath, inScene: scene ?? sceneName, isDetail: isDetailForPath, skipIfAncestor: skipIfAncestor, animate: animate)
+    return NavigationAction.navigate(to: absolutePath, inRoute: routeName ?? self.routeName, isDetail: isDetailForPath, skipIfAncestor: skipIfAncestor)
+  }
+
+  /// Navigate relative to current route.
+  ///
+  /// - Parameter isActive: Toggles the active state of the waypoint.
+  /// - Returns: A navigation action.
+  public func toggle(isActive: Bool) -> Action {
+    NavigationAction.toggle(
+      path: path,
+      inRoute: routeName,
+      isDetail: isDetail,
+      isActive: isActive
+    )
   }
 
   /// Manually complete the navigation.
@@ -117,7 +96,7 @@ public struct Waypoint: Equatable {
   /// - Parameter isDetailOverride: Complete in the detail route.
   /// - Returns: A navigation action.
   public func completeNavigation(isDetail isDetailOverride: Bool = false) -> Action {
-    return NavigationAction.completeRouting(scene: sceneName, isDetail: isDetail || isDetailOverride)
+    return NavigationAction.completeRouting(routeName: routeName, isDetail: isDetail || isDetailOverride)
   }
 
   /// Begin caching the route's children.
@@ -125,18 +104,14 @@ public struct Waypoint: Equatable {
   /// - Parameter policy: The caching policy to use.
   /// - Returns: The action.
   public func beginCaching(policy: NavigationState.RouteCachingPolicy = .whileActive) -> Action {
-    NavigationAction.beginCaching(path: path, scene: sceneName, isDetail: isDetail, policy: policy)
+    NavigationAction.beginCaching(path: path, routeName: routeName, isDetail: isDetail, policy: policy)
   }
 
   /// Stop caching the route's children.
   ///
   /// - Returns: The action.
   public func stopCaching() -> Action {
-    NavigationAction.stopCaching(path: path, scene: sceneName, isDetail: isDetail)
-  }
-
-  public func shouldComplete(for route: NavigationState.Route) -> Bool {
-    !route.completed && path == route.lastLeg.parentPath
+    NavigationAction.stopCaching(path: path, routeName: routeName, isDetail: isDetail)
   }
 
   /// Standardizes a relative path off the route's path.
@@ -150,8 +125,21 @@ public struct Waypoint: Equatable {
   }
 }
 
+extension Waypoint: Equatable {
+
+  public static func == (lhs: Waypoint, rhs: Waypoint) -> Bool {
+    lhs.routeName == rhs.routeName
+      && lhs.path == rhs.path
+      && lhs.isDetail == rhs.isDetail
+      && lhs.isActive == rhs.isActive
+  }
+}
+
 internal final class WaypointKey: EnvironmentKey {
-  public static var defaultValue = Waypoint(sceneName: NavigationState.Scene.defaultName, path: "/")
+  public static var defaultValue = Waypoint(
+    isActive: Binding(get: { true }, set: { _ in }),
+    destination: Binding(get: { "" }, set: { _ in })
+  )
 }
 
 extension EnvironmentValues {
@@ -160,51 +148,5 @@ extension EnvironmentValues {
   public var waypoint: Waypoint {
     get { self[WaypointKey] }
     set { self[WaypointKey] = newValue }
-  }
-}
-
-extension View {
-
-  /// Specify a new scene for the current route.
-  ///
-  /// - Parameter name: The name of the scene.
-  /// - Returns: The view.
-  public func scene(_ name: String) -> some View {
-    self.environment(\.waypoint, Waypoint(sceneName: name, path: "/"))
-  }
-
-  /// Set the view as the next waypoint.
-  ///
-  /// - Parameter waypoint: Pass a custom waypoint to use.
-  /// - Returns: The view
-  public func waypoint(with waypoint: Waypoint?) -> some View {
-    self.transformEnvironment(\.waypoint) {
-      guard var waypoint = waypoint else { return }
-      waypoint.sceneName = $0.sceneName
-      $0 = waypoint
-    }
-  }
-
-  /// Set the view as the next waypoint.
-  ///
-  /// - Parameter component: The component, or name, of the waypoint.
-  /// - Returns: The view
-  public func waypoint<T>(with component: T) -> some View where T: LosslessStringConvertible {
-    self.transformEnvironment(\.waypoint) {
-      $0 = $0.next(with: component)
-    }
-  }
-
-  /// Resets the route by applying a root waypoint.
-  ///
-  /// This should only be used to indicate the detail route's root waypoint.
-  /// - Parameters:
-  ///   - path: The root path of the route.
-  ///   - isDetail: If it's for the detail route.
-  /// - Returns: The view
-  public func resetRoute(with path: String, isDetail: Bool = false) -> some View {
-    self.transformEnvironment(\.waypoint) {
-      $0 = Waypoint(sceneName: $0.sceneName, path: path, isDetail: isDetail)
-    }
   }
 }

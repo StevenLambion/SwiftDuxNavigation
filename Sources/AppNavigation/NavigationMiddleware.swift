@@ -12,10 +12,15 @@ public struct NavigationMiddleware<State>: Middleware where State: NavigationSta
   /// to a login screen.
   private var onNavigate: NavigateHandler?
 
-  /// Triggers when completion failed. It provide the scene name and if it is the detail route.
-  /// The default implementation redirects the route to the root waypoint.
+  /// Triggers when an error occurs with navigaiton.
+  /// The default implementation redirects the route to the root waypoint if route completion fails.
   private var onError: ErrorHandler
 
+  /// Initiate a new navigation middleware.
+  ///
+  /// - Parameters:
+  ///   - onNavigate: A closure to filter and control navigation events.
+  ///   - onError: A closure called when there's navigation errors.
   public init(
     onNavigate: NavigateHandler? = nil,
     onError: @escaping ErrorHandler = Self.defaultErrorHandler
@@ -24,38 +29,18 @@ public struct NavigationMiddleware<State>: Middleware where State: NavigationSta
     self.onError = onError
   }
 
-  public func run(store: StoreProxy<State>, action: Action) {
-    if allowNavigationAction(store: store, action: action) {
-      store.next(action)
-      postActionRun(store: store, action: action)
-    }
-  }
-
-  private func allowNavigationAction(store: StoreProxy<State>, action: Action) -> Bool {
-    guard
-      let onNavigate = onNavigate,
-      case NavigationAction.beginRouting(let path, let scene, let isDetail, _, let animate) = action
-    else { return true }
-    return onNavigate(store, path, scene, isDetail, animate)
-  }
-
-  private func postActionRun(store: StoreProxy<State>, action: Action) {
+  public func run(store: StoreProxy<State>, action: Action) -> Action? {
     switch action {
-    case NavigationAction.beginRouting(_, let scene, let isDetail, _, _):
-      store.send(NavigationAction.verifyRouteCompeletion(inScene: scene, isDetail: isDetail))
     case StoreAction<State>.reset:
-      store.state.navigation.sceneByName.forEach { sceneName, scene in
-        if scene.route.path != "/" {
-          store.send(NavigationAction.verifyRouteCompeletion(inScene: sceneName, isDetail: false))
-        }
-        if scene.detailRoute.path != "/" {
-          store.send(NavigationAction.verifyRouteCompeletion(inScene: sceneName, isDetail: true))
-        }
-      }
+      store.send(NavigationAction.verifyAllRouteCompeletions())
+      return action
     case NavigationAction.setError(let error, let message):
       onError(store, error, message)
+      return action
+    case NavigationAction.beginRouting(let path, let routeName, let isDetail, _):
+      return onNavigate?(store, path, routeName, isDetail) ?? true ? action : nil
     default:
-      break
+      return action
     }
   }
 }
@@ -67,11 +52,10 @@ extension NavigationMiddleware {
   /// - Parameters:
   ///   - store: The store. It can be used to send actions within the handler.
   ///   - path: The path of the route.
-  ///   - scene: The scene of the route..
+  ///   - routeName: The name of the route..
   ///   - isDetail: If it's the detail route..
-  ///   - animate: if the routing will animate.
   /// - Returns: True to allow the routing or false to stop it.
-  public typealias NavigateHandler = (StoreProxy<State>, String, String, Bool, Bool) -> Bool
+  public typealias NavigateHandler = (StoreProxy<State>, String, String, Bool) -> Bool
 
   /// Handle navigational errors, and provide ways to recover from them.
   ///
@@ -79,7 +63,7 @@ extension NavigationMiddleware {
   ///   - store: The store. It can be used to send actions within the handler.
   ///   - error: The navigational error.
   ///   - message:The error message, useful for logging.
-  public typealias ErrorHandler = (StoreProxy<State>, NavigationError, String) -> Void
+  public typealias ErrorHandler = (StoreProxy<State>, Error, String) -> Void
 
   /// Default error handler. It redirect failed routes to the root path. It also prints any errors.
   ///
@@ -87,7 +71,7 @@ extension NavigationMiddleware {
   ///   - store: The store. It can be used to send actions within the handler.
   ///   - error: The navigational error.
   ///   - message:The error message, useful for logging.
-  public static func defaultErrorHandler(store: StoreProxy<State>, error: NavigationError, message: String) {
+  public static func defaultErrorHandler(store: StoreProxy<State>, error: Error, message: String) {
     routeCompletionFailedErrorHandler(store: store, error: error, message: message)
     printErrorHandler(store: store, error: error, message: message)
   }
@@ -98,9 +82,11 @@ extension NavigationMiddleware {
   ///   - store: The store. It can be used to send actions within the handler.
   ///   - error: The navigational error.
   ///   - message:The error message, useful for logging.
-  public static func routeCompletionFailedErrorHandler(store: StoreProxy<State>, error: NavigationError, message: String) {
-    if case .routeCompletionFailed(let scene, let isDetail) = error {
-      store.send(NavigationAction.navigate(to: "/", inScene: scene, isDetail: isDetail, animate: false))
+  public static func routeCompletionFailedErrorHandler(store: StoreProxy<State>, error: Error, message: String) {
+    guard let error = error as? NavigationError else { return }
+
+    if case .routeCompletionFailed(let routeName, let isDetail) = error {
+      store.send(NavigationAction.navigate(to: "/", inRoute: routeName, isDetail: isDetail))
     }
   }
 
@@ -110,7 +96,7 @@ extension NavigationMiddleware {
   ///   - store: The store. It can be used to send actions within the handler.
   ///   - error: The navigational error.
   ///   - message:The error message, useful for logging.
-  public static func printErrorHandler(store: StoreProxy<State>, error: NavigationError, message: String) {
+  public static func printErrorHandler(store: StoreProxy<State>, error: Error, message: String) {
     print(message)
   }
 }
