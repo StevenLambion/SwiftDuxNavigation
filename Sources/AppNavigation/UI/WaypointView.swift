@@ -67,7 +67,7 @@ public struct WaypointView<Content>: ConnectableView where Content: View {
       fullPath: route?.path ?? "",
       destination: binder.bind(destination) { nextDestination in
         guard nextDestination != destination else { return nil }
-        return sourceWaypoint.navigate(to: nextDestination)
+        return sourceWaypoint.navigate(to: nextDestination, isDetail: isDetail)
       },
       isActive: binder.bind(isActive(destination: destination)) { active in
         guard let path = leg?.path else { return nil }

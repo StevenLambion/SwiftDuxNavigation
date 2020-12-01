@@ -111,8 +111,8 @@ RouteLink(path: id, isDetail: true) { Text("Label") }
 A waypoint is a single destination within a route. Examples of a waypoint might be a navigational stack item, ActionSheet, or TabView. The last waypoint of an active route is the current destination of the user. You can navigate relative to a waypoint using its `navigate(to:inScene:isDetail:)` method.
 
 ```swift
-@MappedDispatch() private var dispatch
-Environment(\.waypoint) private var waypoint
+@Environment(\.actionDispatcher) private var dispatch
+@Environment(\.waypoint) private var waypoint
 
 // Pass a single path parameter or component.
 let id = 123
@@ -157,7 +157,7 @@ waypoint.navigate(to: "/123")
 ```
 #### Predicate
 ```swift
-// A predicate funciton may be provided for more stringent validation.
+// A predicate function may be provided for more stringent validation.
 WaypointView(.predicate({ Int($0) != nil })) { 
   DestinationView()
 }
@@ -169,7 +169,7 @@ waypoint.navigate(to: "/123")
 You can use the navigation actions directly if the above options aren't available. It also allows you to navigate by URL. This can be useful if the application has a custom URL scheme that launches a new scene for a specific view.
 
 ```swift
-@MappedDispatch() private var dispatch
+@Environment(\.actionDispatcher) private var dispatch
 
 // Navigate to a URL. The first path component is the scene's name.
 let url = URL(string: "/main/notes")!

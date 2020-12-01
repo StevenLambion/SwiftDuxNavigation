@@ -8,15 +8,42 @@ public struct Selection<T, Content>: View where T: LosslessStringConvertible, Co
   @Environment(\.actionDispatcher) private var dispatch
 
   public var initialValue: T?
+  public var isDetail: Bool? = nil
   private var content: (ActionDispatcher, Waypoint) -> Content?
+
+  /// Initiate a SelectionWaypoint with an optional selection.
+  ///
+  /// - Parameters:
+  ///   - initialValue: An initial optional value.
+  ///   - isDetail: If the selection should represent the root of the detail route.
+  ///   - content: A closure that returns the content of the waypoint.
+  public init(initialValue: T?, isDetail: Bool? = nil, @ViewBuilder content: @escaping (Binding<T?>) -> Content) {
+    self.initialValue = initialValue
+    self.isDetail = isDetail
+    self.content = { _, waypoint -> Content? in content(waypoint.destination(as: T.self)) }
+  }
+
+  /// Initiate a SelectionWaypoint with an optional selection.
+  ///
+  /// - Parameters:
+  ///   - type: The type of selection value.
+  ///   - isDetail: If the selection should represent the root of the detail route.
+  ///   - content: A closure that returns the content of the waypoint.
+  public init(ofType type: T.Type, isDetail: Bool? = nil, @ViewBuilder content: @escaping (Binding<T?>) -> Content) {
+    self.initialValue = nil
+    self.isDetail = isDetail
+    self.content = { _, waypoint -> Content? in content(waypoint.destination(as: T.self)) }
+  }
 
   /// Initiate a SelectionWaypoint with an initial selection.
   ///
   /// - Parameters:
   ///   - initialValue: The initial selection value.
+  ///   - isDetail: If the selection should represent the root of the detail route.
   ///   - content: A closure that returns the content of the waypoint.
-  public init(initialValue: T, @ViewBuilder content: @escaping (Binding<T>) -> Content) {
+  public init(initialValue: T, isDetail: Bool? = nil, @ViewBuilder content: @escaping (Binding<T>) -> Content) {
     self.initialValue = initialValue
+    self.isDetail = isDetail
     self.content = { dispatch, waypoint in
       let destination = waypoint.destination
       let view = T(destination ?? "").map { value in
@@ -31,19 +58,9 @@ public struct Selection<T, Content>: View where T: LosslessStringConvertible, Co
     }
   }
 
-  /// Initiate a SelectionWaypoint with an optional selection.
-  ///
-  /// - Parameters:
-  ///   - type: The type of selection value.
-  ///   - content: A closure that returns the content of the waypoint.
-  public init(ofType type: T.Type, @ViewBuilder content: @escaping (Binding<T?>) -> Content) {
-    self.initialValue = nil
-    self.content = { _, waypoint -> Content? in content(waypoint.destination(as: T.self)) }
-  }
-
   public var body: some View {
-    WaypointView(.parameter(defaultValue: initialValue)) { waypoint in
-      content(dispatch, waypoint)
+    WaypointView(.parameter(defaultValue: initialValue), isDetail: isDetail) { waypoint in
+      content(dispatch, waypoint)?.environment(\.waypoint, waypoint)
     }
   }
 }
