@@ -5,91 +5,112 @@ import SwiftUI
 
 /// Navigation actions
 public enum NavigationAction: Action {
+
   /// Set an error object.
   case setOptions(NavigationState.Options)
 
   /// Set an error object.
-  case setError(NavigationError, message: String)
+  case setError(Error, message: String)
 
-  /// Remove a scene from state  by name.
-  case clearScene(String)
+  /// Add a route to the navigation state.
+  case addRoute(primary: NavigationState.RouteState, detail: NavigationState.RouteState)
+
+  /// Remove a route from the navigation state.
+  case removeRoute(named: String)
 
   /// Begin routing to a new path.
-  case beginRouting(path: String, scene: String, isDetail: Bool, skipIfAncestor: Bool, animate: Bool)
+  case beginRouting(path: String, routeName: String, isDetail: Bool, skipIfAncestor: Bool)
 
   /// Complete the navigation routing.
-  case completeRouting(scene: String, isDetail: Bool)
+  case completeRouting(routeName: String, isDetail: Bool)
 
   /// Begin caching a route's children.
-  case beginCaching(path: String, scene: String, isDetail: Bool, policy: NavigationState.RouteCachingPolicy)
+  case beginCaching(path: String, routeName: String, isDetail: Bool, policy: NavigationState.RouteCachingPolicy)
 
   /// Stops caching a route's children.
-  case stopCaching(path: String, scene: String, isDetail: Bool)
+  case stopCaching(path: String, routeName: String, isDetail: Bool)
 }
 
 extension NavigationAction {
 
   /// Navigate to a new path.
-  /// 
+  ///
   /// - Parameters:
   ///   - path: The path to navigate to. It can be an absolute or relative path.
-  ///   - scene: The scene to navigate.
+  ///   - routeName: The name of the route to change.
   ///   - isDetail: Applies to the detail route.
   ///   - skipIfAncestor: Prevents the route from changing if the next path is an ancestor.
-  ///   - animate: Animate the navigational transition.
+  ///   - verify: Verify that the route completes successfully.
   /// - Returns: The navigation action.
   public static func navigate(
     to path: String,
-    inScene scene: String = NavigationState.Scene.defaultName,
+    inRoute routeName: String,
     isDetail: Bool = false,
     skipIfAncestor: Bool = false,
-    animate: Bool = true
-  ) -> ActionPlan<NavigationStateRoot> {
-    ActionPlan { store in
-      let getRoute = self.routeGetter(forScene: scene, isDetail: isDetail)
-      guard let route = getRoute(store) else { return }
-      if !route.completed {
-        store.send(self.completeRouting(scene: scene, isDetail: isDetail))
-      }
-      store.send(
-        NavigationAction.beginRouting(
-          path: path,
-          scene: scene,
-          isDetail: isDetail,
-          skipIfAncestor: skipIfAncestor,
-          animate: animate
-        )
-      )
+    verify: Bool = true
+  ) -> Action {
+    let action =
+      completeRouting(routeName: routeName, isDetail: isDetail)
+      + beginRouting(path: path, routeName: routeName, isDetail: isDetail, skipIfAncestor: skipIfAncestor)
+
+    if verify {
+      return action + verifyRouteCompeletion(inRoute: routeName, isDetail: isDetail)
+    }
+
+    return action
+  }
+
+  /// Navigate to a new path.
+  ///
+  /// - Parameters:
+  ///   - path: The path to navigate to. It can be an absolute or relative path.
+  ///   - routeName: The name of the route to change.
+  ///   - isDetail: Applies to the detail route.
+  ///   - skipIfAncestor: Prevents the route from changing if the next path is an ancestor.
+  ///   - isActive: Toggles the active state of the path.
+  /// - Returns: The navigation action.
+  public static func toggle(
+    path: String,
+    inRoute routeName: String,
+    isDetail: Bool = false,
+    skipIfAncestor: Bool = false,
+    isActive: Bool
+  ) -> Action {
+    ActionPlan<NavigationStateRoot> { store in
+      publishRoute(in: store.state.navigation, inRoute: routeName, isDetail: isDetail)
+        .compactMap { route -> Action? in
+          guard isActive || path == route.path else { return nil }
+          return navigate(to: isActive ? path : "..", inRoute: routeName, isDetail: isDetail, skipIfAncestor: skipIfAncestor, verify: isActive)
+        }
+        .catch { error -> Just<Action> in
+          Just(setError(error, message: "Error when toggling route."))
+        }
     }
   }
 
   /// Navigate to a new path with a URL.
   ///
-  /// The URL represents the entire path to a scene's routes. The first path component must be the name of the scene.
+  /// The URL represents the entire path of a route. The first path component must be the name of the route.
   /// A fragment may be added to represent the detail route.
   ///
-  /// `sceneName/path/to/route#/detail/route/`
+  /// `routeName/path/to/route/#/detail/route/`
   ///
-  /// - Parameters:
-  ///   - url: A URL to the new path.
-  ///   - animate: Animate the navigational transition.
+  /// - Parameter url: A URL to the new path.
   /// - Returns: The navigation action.
-  public static func navigate(
-    to url: URL,
-    animate: Bool = true
-  ) -> Action {
-    guard let sceneName = url.pathComponents.first else { return EmptyAction() }
-    var routePath = url.pathComponents.dropFirst().joined(separator: "/")
-    let detailRoutePath = url.fragment
+  public static func navigate(to url: URL) -> Action {
+    ActionPlan<NavigationStateRoot> { store in
+      guard let routeName = url.pathComponents.first else { return }
+      var primaryPath = url.pathComponents.dropFirst().joined(separator: "/")
+      let detailPath = url.fragment
 
-    if routePath.isEmpty {
-      routePath = "/"
-    }
+      if primaryPath.isEmpty {
+        primaryPath = "/"
+      }
 
-    return ActionPlan<NavigationStateRoot> { store in
-      store.send(navigate(to: routePath, inScene: sceneName, animate: true))
-      if let detailRoutePath = detailRoutePath {
-        store.send(navigate(to: detailRoutePath, inScene: sceneName, isDetail: true, animate: true))
+      store.send(navigate(to: primaryPath, inRoute: routeName))
+
+      if let detailPath = detailPath {
+        store.send(navigate(to: detailPath, inRoute: routeName, isDetail: true))
       }
     }
   }
@@ -98,68 +119,67 @@ extension NavigationAction {
   ///
   /// If a route isn't completed in a given time range, it will timeout.
   /// - Parameters:
-  ///   - sceneName: The route's scene.
+  ///   - routeName: The route's name.
   ///   - isDetail: If it is the detail route.
   /// - Returns: The AnyCancellable.
-  public static func verifyRouteCompeletion(
-    inScene sceneName: String,
-    isDetail: Bool
-  )
-    -> Action
-  {
-    ActionPlan<NavigationStateRoot> { store, completed in
-      let getRoute = routeGetter(forScene: sceneName, isDetail: isDetail)
-      let options = store.state.navigation.options
-
-      guard let route = getRoute(store) else { return nil }
-      guard !route.completed else { return nil }
-
-      return store.didChange
-        .setFailureType(to: NavigationError.self)
-        .timeout(options.completionTimeout, scheduler: RunLoop.main) {
-          NavigationError.routeCompletionFailed(scene: sceneName, isDetail: isDetail)
+  static func verifyRouteCompeletion(inRoute routeName: String, isDetail: Bool) -> Action {
+    ActionPlan<NavigationStateRoot> { store in
+      store.publish { $0.navigation }
+        .flatMap { publishRoute(in: $0, inRoute: routeName, isDetail: isDetail) }
+        .setFailureType(to: Error.self)
+        .timeout(store.state.navigation.options.completionTimeout, scheduler: RunLoop.main) {
+          NavigationError.routeCompletionFailed(route: routeName, isDetail: isDetail)
         }
-        .compactMap { _ in getRoute(store) }
         .filter { $0.completed }
-        .first { _ in true }
-        .sink(
-          receiveCompletion: { completion in
-            defer { completed() }
-            if case .failure(let error) = completion {
-              store.send(self.setError(error, message: "Route completion timed out for: '\(getRoute(store)?.path ?? "")'"))
-              store.send(NavigationAction.completeRouting(scene: sceneName, isDetail: isDetail))
+        .first()
+        .compactMap { _ -> Action? in nil }
+        .catch { (error: Error) -> Just<Action> in
+          var errorAction: Action
+
+          switch error as? NavigationError {
+          case .routeCompletionFailed(_, _):
+            errorAction = NavigationAction.setError(error, message: "Route completion timed out for the '\(routeName)' route.")
+          default:
+            errorAction = NavigationAction.setError(error, message: "Unknown error during route completion verification.")
+          }
+
+          return Just(
+            errorAction + NavigationAction.completeRouting(routeName: routeName, isDetail: isDetail)
+          )
+        }
+    }
+  }
+
+  /// Verify all routes have completed.
+  ///
+  /// If a route isn't completed in a given time range, it will timeout.
+  /// - Returns: The AnyCancellable.
+  static func verifyAllRouteCompeletions() -> Action {
+    ActionPlan<NavigationStateRoot> { store in
+      store.publish { $0.navigation }
+        .timeout(.seconds(1), scheduler: RunLoop.main)
+        .map { navigation in
+          Set(navigation.primaryRouteByName.keys).union(navigation.detailRouteByName.keys).reduce(EmptyAction() as Action) { (action, routeName) in
+            var action = action
+
+            if !(navigation.primaryRouteByName[routeName]?.completed ?? true) {
+              action = action + verifyRouteCompeletion(inRoute: routeName, isDetail: false)
             }
-          },
-          receiveValue: { _ in }
-        )
+
+            if !(navigation.detailRouteByName[routeName]?.completed ?? true) {
+              action = action + verifyRouteCompeletion(inRoute: routeName, isDetail: true)
+            }
+            return action
+          }
+        }
     }
   }
 
-  /// A getter that retrieves a specific route from a scene.
-  ///
-  /// - Parameters:
-  ///   - sceneName: The scene containing the route.
-  ///   - isDetail: If it should get the detail route.
-  /// - Returns: The getter.
-  private static func routeGetter(forScene sceneName: String, isDetail: Bool) -> (StoreProxy<NavigationStateRoot>) -> NavigationState.Route? {
-    let getScene = sceneGetter(forScene: sceneName)
-    return { store in
-      guard let scene = getScene(store) else { return nil }
-      return isDetail ? scene.detailRoute : scene.route
-    }
-  }
-
-  /// A getter that retrieves a specific scene.
-  ///
-  /// - Parameter sceneName: The name of the scene.
-  /// - Returns: The getter.
-  private static func sceneGetter(forScene sceneName: String) -> (StoreProxy<NavigationStateRoot>) -> NavigationState.Scene? {
-    { store in
-      guard let scene = store.state.navigation.sceneByName[sceneName] else {
-        store.send(self.setError(.sceneNotFound(scene: sceneName), message: "Scene not found for: '\(sceneName)'"))
-        return nil
+  private static func publishRoute(in state: NavigationState, inRoute routeName: String, isDetail: Bool) -> AnyPublisher<NavigationState.RouteState, Never> {
+    Just(state)
+      .compactMap { state -> NavigationState.RouteState? in
+        isDetail ? state.detailRouteByName[routeName] : state.primaryRouteByName[routeName]
       }
-      return scene
-    }
+      .eraseToAnyPublisher()
   }
 }

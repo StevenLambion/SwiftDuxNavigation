@@ -2,34 +2,31 @@ import Dispatch
 import SwiftDux
 import SwiftUI
 
-/// Button that navigates to  a route.
+/// A navigable button.
 public struct RouteLink<Label>: View where Label: View {
   @Environment(\.waypoint) private var waypoint
-  @MappedDispatch() private var dispatch
+  @Environment(\.actionDispatcher) private var dispatch
 
-  private var path: String
-  private var scene: String?
-  private var isDetail: Bool?
-  private var skipIfAncestor: Bool
-  private var animate: Bool
-  private var label: Label
+  public var path: String
+  public var routeName: String?
+  public var isDetail: Bool?
+  public var skipIfAncestor: Bool
+  public var label: Label
 
-  /// Initiate a new `RouteLink`.
+  /// Initiate a RouteLink.
   ///
   /// - Parameters:
   ///   - path: The path to navigate to. It may be a relative or absolute path.
-  ///   - scene: The scene of the path.
-  ///   - isDetail: If it's for the detail route.
-  ///   - skipIfAncestor: Prevents the route from changing if the next path is an ancestor.
-  ///   - animate: Animate the navigation.
+  ///   - routeName: The name of the route.
+  ///   - isDetail: Whether to navigate the detail route.
+  ///   - skipIfAncestor: Prevents navigation if the path is an ancestor.
   ///   - label: The label of the button.
-  public init<T>(path: T, scene: String? = nil, isDetail: Bool? = nil, skipIfAncestor: Bool = true, animate: Bool = true, @ViewBuilder label: () -> Label)
+  public init<T>(path: T, routeName: String? = nil, isDetail: Bool? = nil, skipIfAncestor: Bool = true, @ViewBuilder label: () -> Label)
   where T: LosslessStringConvertible {
     self.path = String(path)
-    self.scene = scene
+    self.routeName = routeName
     self.isDetail = isDetail
     self.skipIfAncestor = skipIfAncestor
-    self.animate = animate
     self.label = label()
   }
 
@@ -38,6 +35,6 @@ public struct RouteLink<Label>: View where Label: View {
   }
 
   private func navigate() {
-    dispatch(waypoint.navigate(to: path, inScene: scene, isDetail: isDetail, skipIfAncestor: skipIfAncestor, animate: animate))
+    dispatch(waypoint.navigate(to: path, inRoute: routeName, isDetail: isDetail, skipIfAncestor: skipIfAncestor))
   }
 }

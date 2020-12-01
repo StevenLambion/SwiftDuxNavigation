@@ -7,49 +7,64 @@ public protocol NavigationStateRoot {
 }
 
 /// The state of the navigation system.
-public struct NavigationState: StateType {
+public struct NavigationState: Equatable, Codable {
   /// Options of the navigation state.
   public var options: Options = Options()
 
-  /// All scenes by their name.
-  public var sceneByName: [String: Scene]
+  /// All primary routes by their name.
+  public var primaryRouteByName: [String: RouteState]
 
+  /// All detail routes by their name.
+  public var detailRouteByName: [String: RouteState]
+
+  /// The last error received.
   public var lastNavigationError: NavigationError? = nil
+
+  /// The last error message received.
   public var lastNavigationErrorMessage: String? = nil
 
+  /// Initiate a navigation state.
+  ///
+  /// - Parameters:
+  ///   - options: Options of the navigation state.
+  ///   - primaryRouteByName: The primary routes by name.
+  ///   - detailRouteByName: The primary routes by name.
+  ///   - lastNavigationError: The last error received.
+  ///   - lastNavigationErrorMessage: The last error message received.
   public init(
     options: Options = Options(),
-    sceneByName: [String: Scene] = [
-      Scene.defaultName: Scene(name: Scene.defaultName)
-    ],
+    primaryRouteByName: [String: RouteState] = [defaultRouteName: RouteState()],
+    detailRouteByName: [String: RouteState] = [defaultRouteName: RouteState()],
     lastNavigationError: NavigationError? = nil,
     lastNavigationErrorMessage: String? = nil
   ) {
     self.options = options
-    self.sceneByName = sceneByName
+    self.primaryRouteByName = primaryRouteByName
+    self.detailRouteByName = detailRouteByName
     self.lastNavigationError = lastNavigationError
     self.lastNavigationErrorMessage = lastNavigationErrorMessage
   }
 
   public enum CodingKeys: String, CodingKey {
-    case options, sceneByName
+    case options, primaryRouteByName, detailRouteByName
   }
 }
 
 extension NavigationState {
 
-  /// Options for the NavigationState.
-  public struct Options: StateType {
+  public static var defaultRouteName = "main"
 
-    /// The timeout for uncompleted routes.
+  /// Options for the NavigationState.
+  public struct Options: Equatable, Codable {
+
+    /// The timeout for incomplete routes.
     var completionTimeout: RunLoop.SchedulerTimeType.Stride
 
-    /// Enable route animations.
-    var animationEnabled: Bool
-
-    public init(completionTimeout: RunLoop.SchedulerTimeType.Stride = .seconds(1), animationEnabled: Bool = true) {
+    /// Initiate navigation options.
+    ///
+    /// - Parameter completionTimeout: The timeout for incomplete routes.
+    public init(completionTimeout: RunLoop.SchedulerTimeType.Stride = .seconds(1)) {
       self.completionTimeout = completionTimeout
-      self.animationEnabled = animationEnabled
     }
   }
 }

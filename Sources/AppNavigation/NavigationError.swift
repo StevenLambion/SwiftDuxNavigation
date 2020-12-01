@@ -1,7 +1,9 @@
 import Foundation
 
+/// Navigation errors.
 public enum NavigationError: Error, Equatable {
   case unknown
-  case sceneNotFound(scene: String)
-  case routeCompletionFailed(scene: String, isDetail: Bool)
+
+  /// A route failed to resolve within the timeout limit.
+  case routeCompletionFailed(route: String, isDetail: Bool)
 }

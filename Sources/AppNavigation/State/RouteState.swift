@@ -2,35 +2,44 @@ import Foundation
 import SwiftDux
 
 extension NavigationState {
-  /// A single route leg as a segment of the route.
-  public struct RouteLeg: StateType {
-    /// The parent path of the leg.
-    public var parentPath: String
 
-    /// The component of this leg.
-    public var component: String
+  /// A single route leg as a segment of the route.
+  public struct RouteLeg: Equatable, Codable {
+
+    /// The parent path of the leg.
+    public var sourcePath: String
+
+    /// The name of the leg's destination.
+    public var destination: String
 
     /// The index of the leg.
     public var index: Int
 
     /// The full path of a leg.
     public var path: String {
-      component.isEmpty ? parentPath : "\(parentPath)\(component)/"
+      destination.isEmpty ? sourcePath : "\(sourcePath)\(destination)/"
     }
 
-    public init(parentPath: String = "/", component: String = "", index: Int = 0) {
-      self.parentPath = parentPath
-      self.component = component
+    /// Initiate a RouteLeg state.
+    ///
+    /// - Parameters:
+    ///   - sourcePath: The parent path of the leg.
+    ///   - destination: The name of the leg's destination.
+    ///   - index: The index of the leg.
+    public init(sourcePath: String = "/", destination: String = "", index: Int = 0) {
+      self.sourcePath = sourcePath
+      self.destination = destination
       self.index = index
     }
 
-    /// /// Append a component to form a new leg.
-    /// - Parameter component: The component to append.
+    /// Append a destination to form a new leg.
+    ///
+    /// - Parameter destination: The next destination.
     /// - Returns: A new `RouteLeg`.
-    public func append(component: String) -> RouteLeg {
+    public func append(destination: String) -> RouteLeg {
       RouteLeg(
-        parentPath: path,
-        component: component,
+        sourcePath: path,
+        destination: destination,
         index: index + 1
       )
     }
@@ -44,59 +53,58 @@ extension NavigationState {
   }
 
   /// Cache for a route to save it's child routes.
-  public struct RouteCache: StateType {
+  public struct RouteCache: Equatable, Codable {
     public var policy: RouteCachingPolicy
-    public var parentPath: String
+    public var sourcePath: String
     public var path: String
     public var snapshots: [String: String] = [:]
   }
 
-  /// An active route of a scene.
-  public struct Route: StateType {
+  /// A route within the application.
+  public struct RouteState: Equatable, Codable {
+
+    /// The absolute path of the route.
+    public var name: String
 
     /// The absolute path of the route.
     public var path: String
 
-    /// All the legs of the route by their parent path.
-    public var legsByPath: [String: RouteLeg]
+    /// All the legs of the route by their source path.
+    public var legBySourcePath: [String: RouteLeg]
 
     /// An ordered list of all the legs' absolute paths.
     public var orderedLegPaths: [String]
 
     /// The last leg of the route.
     public var lastLeg: RouteLeg {
-      let index = orderedLegPaths.count - 2
-      guard index > 0 else { return RouteLeg() }
-      return legsByPath[orderedLegPaths[index]] ?? RouteLeg()
+      let index = min(0, orderedLegPaths.count - 2)
+      return legBySourcePath[orderedLegPaths[index]] ?? RouteLeg()
     }
 
     /// The route caches by their path.
     public var caches: [String: RouteCache]
 
-    /// The route changes should be animated.
-    public var animate: Bool = false
-
     /// The route changes have completed.
     public var completed: Bool = false
 
     public init(
+      name: String = NavigationState.defaultRouteName,
       path: String = "/",
       legsByPath: [String: RouteLeg] = [:],
       orderedLegPaths: [String] = [],
       caches: [String: RouteCache] = [:],
-      animate: Bool = false,
       completed: Bool = false
     ) {
+      self.name = name
       self.path = path
-      self.legsByPath = legsByPath
+      self.legBySourcePath = legsByPath
       self.orderedLegPaths = orderedLegPaths
       self.caches = caches
-      self.animate = animate
       self.completed = completed
     }
 
     public enum CodingKeys: String, CodingKey {
-      case path, legsByPath, orderedLegPaths, caches
+      case name, path, legBySourcePath, orderedLegPaths, caches
     }
   }
 }
