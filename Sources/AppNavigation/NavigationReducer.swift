@@ -44,6 +44,8 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
       state = updateRoute(in: state, named: routeName, isDetail: isDetail) { route in
         stopCaching(route: &route, forPath: path)
       }
+    case .setVerifiedPaths(let paths):
+      state.navigation.verifiedPaths = paths
     }
 
     return state

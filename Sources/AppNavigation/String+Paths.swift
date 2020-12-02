@@ -24,4 +24,16 @@ extension String {
   public func standardizedPath(withBasePath basePath: String = "/") -> String? {
     standardizedURL(withBasePath: basePath)?.absoluteString
   }
+
+  static func routePath(withName name: String, primaryPath: String = "", detailPath: String = "") -> String {
+    "\(name)\(primaryPath)\(!detailPath.isEmpty ? "#\(detailPath)" : "")"
+  }
+
+  static func routePath(withRoute route: NavigationState.RouteState, isDetail: Bool = false) -> String {
+    String.routePath(
+      withName: route.name,
+      primaryPath: isDetail ? "" : route.path,
+      detailPath: isDetail ? route.path : ""
+    )
+  }
 }

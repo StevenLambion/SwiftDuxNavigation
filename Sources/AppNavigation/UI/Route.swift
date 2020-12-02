@@ -3,6 +3,8 @@ import SwiftUI
 
 /// Starts a new Route with a given name.
 public struct Route<Content>: View where Content: View {
+  @Environment(\.actionDispatcher) private var dispatch
+
   public var name: String
   public var content: Content
 
@@ -24,6 +26,14 @@ public struct Route<Content>: View where Content: View {
       isActive: Binding(get: { true }, set: { _ in }),
       destination: .constant("")
     )
-    return content.environment(\.waypoint, waypoint)
+    return
+      content
+      .environment(\.waypoint, waypoint)
+      .transformPreference(VerifiedPathsPreferenceKey.self) { preference in
+        preference.insert(String.routePath(withName: name))
+      }
+      .onPreferenceChange(VerifiedPathsPreferenceKey.self) { preference in
+        dispatch(NavigationAction.setVerifiedPaths(paths: preference))
+      }
   }
 }

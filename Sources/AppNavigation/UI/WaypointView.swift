@@ -91,17 +91,25 @@ public struct WaypointView<Content>: ConnectableView where Content: View {
       destination: props.$destination
     )
 
-    if props.leg?.path == props.fullPath {
-      dispatch(waypoint.completeNavigation())
-    }
+    return content(waypoint)
+      .transformPreference(VerifiedPathsPreferenceKey.self) { preference in
+        if props.isActive {
+          preference.insert(
+            String.routePath(
+              withName: waypoint.routeName,
+              primaryPath: waypoint.isDetail ? "" : waypoint.path,
+              detailPath: waypoint.isDetail ? waypoint.path : ""
+            )
+          )
+        }
+      }
+      .onAppear {
+        guard !props.isActive,
+          let value = defaultValue
+        else { return }
 
-    return content(waypoint).onAppear {
-      guard !props.isActive,
-        let value = defaultValue
-      else { return }
-
-      dispatch(sourceWaypoint.navigate(to: value))
-    }
+        dispatch(sourceWaypoint.navigate(to: value))
+      }
   }
 
   private func isActive(destination: String?) -> Bool {
@@ -115,5 +123,14 @@ public struct WaypointView<Content>: ConnectableView where Content: View {
     case .predicate(let predicate):
       return predicate(destination)
     }
+  }
+}
+
+internal final class VerifiedPathsPreferenceKey: PreferenceKey {
+
+  static var defaultValue: Set<String> = Set()
+
+  static func reduce(value: inout Set<String>, nextValue: () -> Set<String>) {
+    value.formUnion(nextValue())
   }
 }

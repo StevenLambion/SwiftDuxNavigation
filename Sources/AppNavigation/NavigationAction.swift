@@ -29,6 +29,9 @@ public enum NavigationAction: Action {
 
   /// Stops caching a route's children.
   case stopCaching(path: String, routeName: String, isDetail: Bool)
+
+  /// Set the verified paths currently active in the UI.
+  case setVerifiedPaths(paths: Set<String>)
 }
 
 extension NavigationAction {
@@ -80,7 +83,7 @@ extension NavigationAction {
       publishRoute(in: store.state.navigation, inRoute: routeName, isDetail: isDetail)
         .compactMap { route -> Action? in
           guard isActive || path == route.path else { return nil }
-          return navigate(to: isActive ? path : "..", inRoute: routeName, isDetail: isDetail, skipIfAncestor: skipIfAncestor, verify: isActive)
+          return navigate(to: isActive ? path : "..", inRoute: routeName, isDetail: isDetail, skipIfAncestor: skipIfAncestor)
         }
         .catch { error -> Just<Action> in
           Just(setError(error, message: "Error when toggling route."))
@@ -124,15 +127,22 @@ extension NavigationAction {
   /// - Returns: The AnyCancellable.
   static func verifyRouteCompeletion(inRoute routeName: String, isDetail: Bool) -> Action {
     ActionPlan<NavigationStateRoot> { store in
-      store.publish { $0.navigation }
-        .flatMap { publishRoute(in: $0, inRoute: routeName, isDetail: isDetail) }
+      publishRoute(in: store.state.navigation, inRoute: routeName, isDetail: isDetail)
+        .map { String.routePath(withRoute: $0, isDetail: isDetail) }
+        .flatMap { routePath in
+          store.publish { state in
+            let navigation = state.navigation
+            let route = isDetail ? navigation.detailRouteByName[routeName] : state.navigation.primaryRouteByName[routeName]
+            return route?.completed ?? false || navigation.verifiedPaths.contains(routePath)
+          }
+        }
         .setFailureType(to: Error.self)
         .timeout(store.state.navigation.options.completionTimeout, scheduler: RunLoop.main) {
           NavigationError.routeCompletionFailed(route: routeName, isDetail: isDetail)
         }
-        .filter { $0.completed }
+        .filter { $0 }
         .first()
-        .compactMap { _ -> Action? in nil }
+        .map { _ in completeRouting(routeName: routeName, isDetail: isDetail) }
         .catch { (error: Error) -> Just<Action> in
           var errorAction: Action
 
@@ -155,20 +165,28 @@ extension NavigationAction {
   static func verifyAllRouteCompeletions() -> Action {
     ActionPlan<NavigationStateRoot> { store in
       store.publish { $0.navigation }
-        .timeout(.seconds(1), scheduler: RunLoop.main)
-        .map { navigation in
-          Set(navigation.primaryRouteByName.keys).union(navigation.detailRouteByName.keys).reduce(EmptyAction() as Action) { (action, routeName) in
-            var action = action
+        .debounce(for: .seconds(1), scheduler: RunLoop.main)
+        .first()
+        .flatMap { navigation -> Publishers.Sequence<[Action], Never> in
+          var routeByPath: [String: (NavigationState.RouteState, Bool)] = [:]
 
-            if !(navigation.primaryRouteByName[routeName]?.completed ?? true) {
-              action = action + verifyRouteCompeletion(inRoute: routeName, isDetail: false)
-            }
-
-            if !(navigation.detailRouteByName[routeName]?.completed ?? true) {
-              action = action + verifyRouteCompeletion(inRoute: routeName, isDetail: true)
-            }
-            return action
+          navigation.primaryRouteByName.forEach { (key, value) in
+            routeByPath[String.routePath(withRoute: value, isDetail: false)] = (value, false)
           }
+
+          navigation.detailRouteByName.forEach { (key, value) in
+            routeByPath[String.routePath(withRoute: value, isDetail: false)] = (value, true)
+          }
+
+          let unqiuePaths = Set(routeByPath.keys).subtracting(navigation.verifiedPaths)
+
+          return unqiuePaths.compactMap { path in
+            guard let (route, isDetail) = routeByPath[path] else { return nil }
+            return NavigationAction.setError(
+              NavigationError.routeCompletionFailed(route: route.name, isDetail: isDetail),
+              message: "Route completion timed out for the '\(route.name)' route."
+            )
+          }.publisher
         }
     }
   }
