@@ -15,13 +15,18 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
     case .setError(let error, let message):
       state.navigation.lastNavigationError = error as? NavigationError
       state.navigation.lastNavigationErrorMessage = message
-    case .beginRouting(let path, let routeName, let isDetail, let skipIfAncestor):
+    case .setRoutePath(let path, let routeName, let isDetail, let skipIfAncestor):
       state = updateRoute(in: state, named: routeName, isDetail: isDetail) { route in
         beginRouting(for: &route, withPath: path, skipIfAncestor: skipIfAncestor)
       }
-    case .completeRouting(let routeName, let isDetail):
-      state = updateRoute(in: state, named: routeName, isDetail: isDetail) { route in
-        completeRouting(route: &route)
+    case .verifyRoutePaths(let primaryPath, let detailPath, let routeName):
+      state = updateRoute(in: state, named: routeName, isDetail: false) { route in
+        guard route.path == primaryPath else { return }
+        route.completed = true
+      }
+      state = updateRoute(in: state, named: routeName, isDetail: true) { route in
+        guard route.path == detailPath else { return }
+        route.completed = true
       }
     case .addRoute(let primary, let detail):
       if let primary = primary {
@@ -44,8 +49,6 @@ public struct NavigationReducer<State>: Reducer where State: NavigationStateRoot
       state = updateRoute(in: state, named: routeName, isDetail: isDetail) { route in
         stopCaching(route: &route, forPath: path)
       }
-    case .setVerifiedPaths(let paths):
-      state.navigation.verifiedPaths = paths
     }
 
     return state

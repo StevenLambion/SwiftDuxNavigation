@@ -32,12 +32,12 @@ public struct NavigationMiddleware<State>: Middleware where State: NavigationSta
   public func run(store: StoreProxy<State>, action: Action) -> Action? {
     switch action {
     case StoreAction<State>.reset:
-      store.send(NavigationAction.verifyAllRouteCompeletions())
+      store.send(NavigationAction.removeInvalidRoutes())
       return action
     case NavigationAction.setError(let error, let message):
       onError(store, error, message)
       return action
-    case NavigationAction.beginRouting(let path, let routeName, let isDetail, _):
+    case NavigationAction.setRoutePath(let path, let routeName, let isDetail, _):
       return onNavigate?(store, path, routeName, isDetail) ?? true ? action : nil
     default:
       return action
@@ -86,7 +86,7 @@ extension NavigationMiddleware {
     guard let error = error as? NavigationError else { return }
 
     if case .routeCompletionFailed(let routeName, let isDetail) = error {
-      store.send(NavigationAction.removeRoute(named: routeName, isDetail: isDetail))
+      store.send(NavigationAction.removeRoute(routeName: routeName, isDetail: isDetail))
     }
   }
 

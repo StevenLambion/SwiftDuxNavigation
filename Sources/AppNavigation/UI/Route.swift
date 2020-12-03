@@ -29,11 +29,15 @@ public struct Route<Content>: View where Content: View {
     return
       content
       .environment(\.waypoint, waypoint)
-      .transformPreference(VerifiedPathsPreferenceKey.self) { preference in
-        preference.insert(String.routePath(withName: name))
+      .transformPreference(VerifiedPathPreferenceKey.self) { preference in
+        if preference.primaryPath.isEmpty {
+          preference.primaryPath = "/"
+        }
       }
-      .onPreferenceChange(VerifiedPathsPreferenceKey.self) { preference in
-        dispatch(NavigationAction.setVerifiedPaths(paths: preference))
+      .onPreferenceChange(VerifiedPathPreferenceKey.self) { preference in
+        let primaryPath = preference.primaryPath
+        let detailPath = preference.detailPath
+        dispatch(NavigationAction.verifyRoutePaths(primaryPath: primaryPath, detailPath: detailPath, routeName: name))
       }
   }
 }

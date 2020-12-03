@@ -81,7 +81,7 @@ public struct SceneRoute<StateType, Content>: View where StateType: Equatable & 
     self.$routeStorageData.wrappedValue = try! JSONEncoder().encode(routeStorage)
 
     dispatch(
-      NavigationAction.removeRoute(named: name, isDetail: false) + NavigationAction.removeRoute(named: name, isDetail: true)
+      NavigationAction.removeRoute(routeName: name, isDetail: false) + NavigationAction.removeRoute(routeName: name, isDetail: true)
     )
   }
 }

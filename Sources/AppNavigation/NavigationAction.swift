@@ -16,22 +16,19 @@ public enum NavigationAction: Action {
   case addRoute(primary: NavigationState.RouteState?, detail: NavigationState.RouteState?)
 
   /// Remove a route from the navigation state.
-  case removeRoute(named: String, isDetail: Bool)
+  case removeRoute(routeName: String, isDetail: Bool)
 
   /// Begin routing to a new path.
-  case beginRouting(path: String, routeName: String, isDetail: Bool, skipIfAncestor: Bool)
+  case setRoutePath(path: String, routeName: String, isDetail: Bool, skipIfAncestor: Bool)
 
-  /// Complete the navigation routing.
-  case completeRouting(routeName: String, isDetail: Bool)
+  /// Completes the routing by verifying the provided paths match the route.
+  case verifyRoutePaths(primaryPath: String, detailPath: String, routeName: String)
 
   /// Begin caching a route's children.
   case beginCaching(path: String, routeName: String, isDetail: Bool, policy: NavigationState.RouteCachingPolicy)
 
   /// Stops caching a route's children.
   case stopCaching(path: String, routeName: String, isDetail: Bool)
-
-  /// Set the verified paths currently active in the UI.
-  case setVerifiedPaths(paths: Set<String>)
 }
 
 extension NavigationAction {
@@ -52,9 +49,7 @@ extension NavigationAction {
     skipIfAncestor: Bool = false,
     verify: Bool = true
   ) -> Action {
-    let action =
-      completeRouting(routeName: routeName, isDetail: isDetail)
-      + beginRouting(path: path, routeName: routeName, isDetail: isDetail, skipIfAncestor: skipIfAncestor)
+    let action = setRoutePath(path: path, routeName: routeName, isDetail: isDetail, skipIfAncestor: skipIfAncestor)
 
     if verify {
       return action + verifyRouteCompeletion(inRoute: routeName, isDetail: isDetail)
@@ -128,12 +123,12 @@ extension NavigationAction {
   static func verifyRouteCompeletion(inRoute routeName: String, isDetail: Bool) -> Action {
     ActionPlan<NavigationStateRoot> { store in
       publishRoute(in: store.state.navigation, inRoute: routeName, isDetail: isDetail)
-        .map { String.routePath(withRoute: $0, isDetail: isDetail) }
+        .map { $0.path }
         .flatMap { routePath in
           store.publish { state in
             let navigation = state.navigation
             let route = isDetail ? navigation.detailRouteByName[routeName] : state.navigation.primaryRouteByName[routeName]
-            return route?.completed ?? false || navigation.verifiedPaths.contains(routePath)
+            return routePath != route?.path ?? "" || route?.completed ?? false
           }
         }
         .setFailureType(to: Error.self)
@@ -142,7 +137,7 @@ extension NavigationAction {
         }
         .filter { $0 }
         .first()
-        .map { _ in completeRouting(routeName: routeName, isDetail: isDetail) }
+        .compactMap { _ in nil }
         .catch { (error: Error) -> Just<Action> in
           var errorAction: Action
 
@@ -162,31 +157,28 @@ extension NavigationAction {
   ///
   /// If a route isn't completed in a given time range, it will timeout.
   /// - Returns: The AnyCancellable.
-  static func verifyAllRouteCompeletions() -> Action {
+  static func removeInvalidRoutes() -> Action {
     ActionPlan<NavigationStateRoot> { store in
       store.publish { $0.navigation }
-        .debounce(for: .seconds(1), scheduler: RunLoop.main)
+        .debounce(for: .seconds(5), scheduler: RunLoop.main)
         .first()
         .flatMap { navigation -> Publishers.Sequence<[Action], Never> in
-          var routeByPath: [String: (NavigationState.RouteState, Bool)] = [:]
-
-          navigation.primaryRouteByName.forEach { (key, value) in
-            routeByPath[String.routePath(withRoute: value, isDetail: false)] = (value, false)
+          let validator = { (route: NavigationState.RouteState, isDetail: Bool) -> Action? in
+            guard !route.completed else { return nil }
+            return removeRoute(routeName: route.name, isDetail: isDetail)
           }
 
-          navigation.detailRouteByName.forEach { (key, value) in
-            routeByPath[String.routePath(withRoute: value, isDetail: false)] = (value, true)
+          var actions: [Action] = []
+
+          actions += navigation.primaryRouteByName.values.compactMap { route in
+            validator(route, false)
           }
 
-          let unqiuePaths = Set(routeByPath.keys).subtracting(navigation.verifiedPaths)
+          actions += navigation.detailRouteByName.values.compactMap { route in
+            validator(route, true)
+          }
 
-          return unqiuePaths.compactMap { path in
-            guard let (route, isDetail) = routeByPath[path] else { return nil }
-            return NavigationAction.setError(
-              NavigationError.routeCompletionFailed(route: route.name, isDetail: isDetail),
-              message: "Route completion timed out for the '\(route.name)' route."
-            )
-          }.publisher
+          return actions.publisher
         }
     }
   }

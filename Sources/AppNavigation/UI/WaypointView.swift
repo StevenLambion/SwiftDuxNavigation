@@ -92,15 +92,13 @@ public struct WaypointView<Content>: ConnectableView where Content: View {
     )
 
     return content(waypoint)
-      .transformPreference(VerifiedPathsPreferenceKey.self) { preference in
-        if props.isActive {
-          preference.insert(
-            String.routePath(
-              withName: waypoint.routeName,
-              primaryPath: waypoint.isDetail ? "" : waypoint.path,
-              detailPath: waypoint.isDetail ? waypoint.path : ""
-            )
-          )
+      .transformPreference(VerifiedPathPreferenceKey.self) { preference in
+        guard props.isActive else { return }
+
+        if waypoint.isDetail && preference.detailPath.isEmpty {
+          preference.detailPath = waypoint.path
+        } else if preference.primaryPath.isEmpty {
+          preference.primaryPath = waypoint.path
         }
       }
       .onAppear {
@@ -126,11 +124,24 @@ public struct WaypointView<Content>: ConnectableView where Content: View {
   }
 }
 
-internal final class VerifiedPathsPreferenceKey: PreferenceKey {
+internal final class VerifiedPathPreferenceKey: PreferenceKey {
 
-  static var defaultValue: Set<String> = Set()
+  struct VerifiedPathPair: Equatable, Hashable {
+    var primaryPath: String = ""
+    var detailPath: String = ""
+  }
 
-  static func reduce(value: inout Set<String>, nextValue: () -> Set<String>) {
-    value.formUnion(nextValue())
+  static var defaultValue = VerifiedPathPair()
+
+  static func reduce(value: inout VerifiedPathPair, nextValue: () -> VerifiedPathPair) {
+    let next = nextValue()
+
+    if !next.detailPath.isEmpty {
+      value.detailPath = next.detailPath
+    }
+
+    if !next.primaryPath.isEmpty {
+      value.primaryPath = next.primaryPath
+    }
   }
 }

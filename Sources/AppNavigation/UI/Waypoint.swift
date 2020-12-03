@@ -91,14 +91,6 @@ public struct Waypoint {
     )
   }
 
-  /// Manually complete the navigation.
-  ///
-  /// - Parameter isDetailOverride: Complete in the detail route.
-  /// - Returns: A navigation action.
-  public func completeNavigation(isDetail isDetailOverride: Bool = false) -> Action {
-    return NavigationAction.completeRouting(routeName: routeName, isDetail: isDetail || isDetailOverride)
-  }
-
   /// Begin caching the route's children.
   ///
   /// - Parameter policy: The caching policy to use.

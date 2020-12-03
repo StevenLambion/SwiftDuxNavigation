@@ -17,9 +17,6 @@ public struct NavigationState: Equatable, Codable {
   /// All detail routes by their name.
   public var detailRouteByName: [String: RouteState]
 
-  /// The verified paths currently active in the UI.
-  public var verifiedPaths: Set<String> = Set()
-
   /// The last error received.
   public var lastNavigationError: NavigationError? = nil
 
